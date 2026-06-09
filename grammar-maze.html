@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Maze 3D</title>
+    
+    <script>
+        window.THREE_LOADED = false;
+        function loadThreeJS() {
+            if(window.THREE_LOADED) return;
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
+            script.onload = function() {
+                window.THREE_LOADED = true;
+                setTimeout(function() {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                    document.getElementById('setup-screen').style.display = 'flex';
+                    if(window.initGameData) window.initGameData();
+                }, 300);
+            };
+            script.onerror = function() {
+                document.getElementById('loadingStatus').innerHTML = '❌ Failed to load Three.js';
+            };
+            document.head.appendChild(script);
+        }
+        window.addEventListener('load', loadThreeJS);
+    </script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0a0a1a; overflow-y: auto; overflow-x: hidden; }
+        #setup-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: none; justify-content: center; align-items: flex-start;
+            z-index: 200; padding: 40px 20px; overflow-y: auto;
+        }
+        .setup-container {
+            max-width: 800px; width: 100%; background: white;
+            border-radius: 20px; padding: 25px; direction: ltr;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); margin-bottom: 20px;
+        }
+        h1 { color: #9b59b6; text-align: center; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input, select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .btn-primary { background: #9b59b6; color: white; }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; padding: 15px; font-size: 18px; width: 100%; margin-top: 20px; }
+        button:hover { transform: translateY(-2px); opacity: 0.9; }
+        .question-list { border: 1px solid #eee; border-radius: 10px; max-height: 250px; overflow-y: auto; margin: 15px 0; background: #fafafa; }
+        .question-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: white; }
+        .question-text { direction: ltr; text-align: left; color: #9b59b6; font-weight: bold; }
+        .question-answer { font-size: 12px; color: #666; }
+        .controls-panel { background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; }
+        .slider-row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .slider-row label { width: 80px; }
+        .slider-row input { flex: 1; }
+        .slider-row span { width: 50px; text-align: center; }
+        
+        #game-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #gameCanvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; outline: none; cursor: crosshair; }
+        
+        .crosshair { position: fixed; top: 50%; left: 50%; width: 24px; height: 24px; transform: translate(-50%, -50%); pointer-events: none; z-index: 100; }
+        .crosshair::before, .crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,0.9); }
+        .crosshair::before { width: 2px; height: 24px; left: 11px; top: 0; }
+        .crosshair::after { width: 24px; height: 2px; left: 0; top: 11px; }
+        .crosshair-dot { position: fixed; top: 50%; left: 50%; width: 4px; height: 4px; background: white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 101; }
+        
+        .hud { position: fixed; top: 15px; left: 15px; background: rgba(0,0,0,0.75); padding: 12px 18px; border-radius: 12px; color: white; z-index: 100; font-size: 14px; direction: ltr; text-align: left; font-family: monospace; backdrop-filter: blur(5px); }
+        .hud div { margin: 4px 0; }
+        .hud span { color: #f1c40f; font-weight: bold; }
+        .health-bar { width: 150px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .health-fill { height: 100%; background: linear-gradient(90deg, #e74c3c, #c0392b); transition: width 0.3s; width: 100%; }
+        
+        .minimap { position: fixed; top: 15px; right: 15px; width: 180px; height: 180px; background: rgba(0,0,0,0.85); border: 2px solid #9b59b6; border-radius: 12px; display: grid; gap: 1px; padding: 4px; z-index: 100; }
+        .minimap-cell { border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+        .minimap-wall { background: #555; }
+        .minimap-path { background: #1a1a2e; }
+        .minimap-player { background: #e74c3c; border-radius: 50%; }
+        .minimap-exit { background: #2ecc71; }
+        .minimap-gate { background: #f39c12; }
+        .minimap-gate-open { background: #27ae60; }
+        
+        .timer { position: fixed; top: 50%; right: 30px; transform: translateY(-50%); width: 80px; height: 80px; z-index: 100; }
+        .timer svg { transform: rotate(-90deg); }
+        .timer-circle-bg { fill: none; stroke: rgba(255,255,255,0.2); stroke-width: 4; }
+        .timer-circle-progress { fill: none; stroke: #f1c40f; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+        .timer-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 22px; font-weight: bold; font-family: monospace; }
+        
+        .question-modal { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.98), rgba(0,0,0,0.85)); padding: 25px; z-index: 150; transform: translateY(100%); transition: transform 0.3s; direction: ltr; text-align: center; backdrop-filter: blur(10px); }
+        .question-modal.active { transform: translateY(0); }
+        .question-sentence { font-size: 24px; color: white; margin-bottom: 20px; font-family: monospace; }
+        .blank { display: inline-block; min-width: 120px; border-bottom: 3px dashed #f1c40f; color: #f1c40f; text-align: center; }
+        .choices { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .choice-btn { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 12px 25px; font-size: 18px; border-radius: 12px; cursor: pointer; transition: all 0.2s; border: none; font-weight: bold; }
+        .choice-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 5px 20px rgba(155,89,182,0.5); }
+        
+        .explain-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .explain-modal.active { display: flex; }
+        .explain-content { background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 30px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center; color: white; }
+        .explain-text { font-size: 18px; margin: 20px 0; direction: ltr; text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; line-height: 1.6; }
+        .next-btn { background: #f1c40f; color: #333; padding: 12px 30px; font-size: 16px; border-radius: 25px; font-weight: bold; }
+        
+        .result-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 250; }
+        .result-modal.active { display: flex; }
+        .result-content { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 30px; border-radius: 20px; text-align: center; color: white; min-width: 320px; border: 1px solid #9b59b6; }
+        
+        .back-btn { position: fixed; top: 15px; left: 15px; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 8px; color: white; cursor: pointer; z-index: 100; font-size: 14px; backdrop-filter: blur(5px); }
+        
+        .interaction-prompt { position: fixed; bottom: 25%; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #e67e22, #d35400); padding: 14px 28px; border-radius: 30px; color: white; display: none; z-index: 100; font-size: 18px; font-weight: bold; animation: pulse 1s infinite; border: 2px solid #f39c12; }
+        @keyframes pulse { 0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.05); } }
+        
+        .controls-hint { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 20px; color: white; font-size: 14px; z-index: 100; border: 1px solid rgba(255,255,255,0.3); }
+        
+        .gate-counter { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 8px 24px; border-radius: 20px; color: white; font-size: 16px; z-index: 100; border: 1px solid #f39c12; font-family: monospace; }
+        
+        .maze-info { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 6px 16px; border-radius: 15px; color: rgba(255,255,255,0.6); font-size: 12px; z-index: 100; }
+        
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; color: white; }
+        .loading-screen h2 { margin-bottom: 20px; color: #9b59b6; }
+        .loading-screen .spinner { width: 50px; height: 50px; border: 5px solid rgba(155, 89, 182, 0.3); border-top-color: #9b59b6; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-screen .status { margin-top: 20px; font-size: 14px; color: #aaa; }
+        
+        .gate-opened-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(46, 204, 113, 0.3); z-index: 90; pointer-events: none; animation: flashOut 0.5s forwards; }
+        @keyframes flashOut { from { opacity: 1; } to { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+    <h2>⏳ Time Maze 3D</h2>
+    <div class="spinner"></div>
+    <div class="status" id="loadingStatus">Loading...</div>
+</div>
+
+<div id="setup-screen">
+    <div class="setup-container">
+        <h1>⏳ Time Maze 3D</h1>
+        <div class="subtitle">Choose the correct answer to open gates and advance</div>
+        
+        <div class="form-group">
+            <label>Add Question:</label>
+            <input type="text" id="sentence" placeholder="Example: She ___ to school yesterday.">
+        </div>
+        <div class="row-2">
+            <input type="text" id="correctAnswer" placeholder="Correct answer">
+            <input type="text" id="wrongAnswer1" placeholder="Wrong answer 1">
+            <input type="text" id="wrongAnswer2" placeholder="Wrong answer 2">
+            <select id="tenseSelect">
+                <option value="Past Simple">Past Simple</option>
+                <option value="Present Simple">Present Simple</option>
+                <option value="Future Simple">Future Simple</option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="addQuestion()" style="width:100%; margin:15px 0">➕ Add</button>
+
+        <div class="question-list" id="questionsList"></div>
+
+        <div style="display: flex; gap: 10px; margin: 15px 0;">
+            <button class="btn-secondary" onclick="loadExamples()" style="flex:1">📚 Examples</button>
+            <button class="btn-danger" onclick="clearAllQuestions()" style="flex:1">🗑️ Clear</button>
+        </div>
+
+        <div class="controls-panel">
+            <div class="slider-row">
+                <label>⏱️ Time:</label>
+                <input type="range" id="timeSlider" min="15" max="60" value="30" oninput="timeVal.innerText=this.value">
+                <span id="timeVal">30</span>
+            </div>
+        </div>
+
+        <button class="btn-start" onclick="startGame()" id="startBtn" disabled>🚀 Start</button>
+    </div>
+</div>
+
+<div id="game-screen">
+    <div class="back-btn" onclick="backToMenu()">🏠 Menu</div>
+    <canvas id="gameCanvas" tabindex="1"></canvas>
+    <div class="crosshair"></div>
+    <div class="crosshair-dot"></div>
+    <div class="controls-hint">WASD to move | 🖱️ Mouse | E to interact</div>
+    
+    <div class="gate-counter" id="gateCounter">🚪 Gate 1 / 5</div>
+    <div class="maze-info" id="mazeInfo">Maze: 7×7</div>
+    
+    <div class="hud">
+        <div>⭐ Score: <span id="scoreDisplay">0</span></div>
+        <div>❤️ Health:</div>
+        <div class="health-bar"><div class="health-fill" id="healthFill"></div></div>
+        <div> Combo: <span id="comboDisplay">0</span></div>
+    </div>
+
+    <div class="minimap" id="minimap"></div>
+
+    <div class="timer">
+        <svg width="80" height="80">
+            <circle class="timer-circle-bg" cx="40" cy="40" r="36"></circle>
+            <circle class="timer-circle-progress" id="timerProgress" cx="40" cy="40" r="36" stroke-dasharray="226"></circle>
+        </svg>
+        <div class="timer-text" id="timerText">30</div>
+    </div>
+
+    <div class="interaction-prompt" id="interactionPrompt">🔴 Press E to open gate</div>
+
+    <div class="question-modal" id="questionModal">
+        <div class="question-sentence" id="questionSentence"></div>
+        <div class="choices" id="choicesContainer"></div>
+    </div>
+</div>
+
+<div class="explain-modal" id="explainModal">
+    <div class="explain-content">
+        <h3 id="explainTitle"></h3>
+        <div class="explain-text" id="explainText"></div>
+        <button class="next-btn" onclick="closeExplain()">➡️ Next</button>
+    </div>
+</div>
+
+<div class="result-modal" id="resultModal">
+    <div class="result-content">
+        <h2 id="resultTitle"></h2>
+        <div id="resultStats"></div>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+            <button class="btn-success" onclick="restartGame()">🔄 Restart</button>
+            <button class="btn-secondary" onclick="backToMenu()">⚙️ Menu</button>
+        </div>
+    </div>
+</div>
+
+<script>
+window.initGameData = function() {
+    window.defaultQuestions = [
+        { sentence: "She ___ yesterday.", answer: "went", wrong1: "go", wrong2: "goes", tense: "Past Simple", explanation: "Past Simple for completed actions in the past." },
+        { sentence: "They ___ now.", answer: "are playing", wrong1: "play", wrong2: "played", tense: "Present Continuous", explanation: "Present Continuous for ongoing actions." },
+        { sentence: "I ___ tomorrow.", answer: "will go", wrong1: "go", wrong2: "went", tense: "Future Simple", explanation: "Future Simple for future events." },
+        { sentence: "He ___ when called.", answer: "was sleeping", wrong1: "sleeps", wrong2: "slept", tense: "Past Continuous", explanation: "Past Continuous for ongoing past actions." },
+        { sentence: "I have ___ it.", answer: "seen", wrong1: "see", wrong2: "saw", tense: "Present Perfect", explanation: "Present Perfect with have/has." },
+        { sentence: "She usually ___ tea.", answer: "drinks", wrong1: "drink", wrong2: "drinking", tense: "Present Simple", explanation: "Present Simple for habits." },
+        { sentence: "We ___ last week.", answer: "went", wrong1: "go", wrong2: "goes", tense: "Past Simple", explanation: "Past Simple with last week." },
+        { sentence: "They ___ next year.", answer: "will buy", wrong1: "buy", wrong2: "bought", tense: "Future Simple", explanation: "Future Simple with next year." },
+        { sentence: "She ___ when phone rang.", answer: "was cooking", wrong1: "cooks", wrong2: "cooked", tense: "Past Continuous", explanation: "Past Continuous + Past Simple." },
+        { sentence: "I ___ already done it.", answer: "have", wrong1: "has", wrong2: "had", tense: "Present Perfect", explanation: "Present Perfect with I/you/we/they = have." },
+        { sentence: "It ___ rain tomorrow.", answer: "will", wrong1: "is", wrong2: "was", tense: "Future Simple", explanation: "Will for distant future or predictions." },
+        { sentence: "She ___ English well.", answer: "speaks", wrong1: "speak", wrong2: "speaking", tense: "Present Simple", explanation: "Present Simple for facts." }
+    ];
+    loadExamples();
+};
+
+let questions = [];
+let currentStage = 1, currentGateIdx = 0, stageQuestions = [], totalGates = 5;
+let score = 0, playerHealth = 100, timeLeft = 30, timerInterval = null;
+let isQuestionActive = false, currentQuestionObj = null;
+let correctCount = 0, wrongCount = 0, combo = 0, maxCombo = 0;
+let gameConfig = { timePerGate: 30 };
+
+let scene, camera, renderer;
+let walls = [], maze = [], mazeSize = 7, cellSize = 3;
+let exitMesh = null, floorMesh = null;
+let mouseX = 0, mouseY = 0;
+let isPointerLock = false, animationId = null;
+let gameRunning = false;
+let gates = [];
+
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+const PLAYER_SPEED = 8;
+const PLAYER_RADIUS = 0.3;
+
+// ==================== Calculate maze size and number of gates based on questions ====================
+function calculateMazeAndGates(numQuestions) {
+    // Every 2-3 questions = 1 gate
+    totalGates = Math.max(3, Math.floor(numQuestions * 0.6));
+    // Maximum 12 gates
+    totalGates = Math.min(12, totalGates);
+    
+    // Maze size proportional to number of gates
+    // 3 gates = 7x7 maze
+    // 5 gates = 9x9 maze
+    // 7 gates = 11x11 maze
+    // 9+ gates = 13x13 maze
+    mazeSize = Math.min(15, Math.max(7, 5 + totalGates * 2));
+    // Ensure size is odd (for maze)
+    if(mazeSize % 2 === 0) mazeSize++;
+    
+    return { mazeSize: mazeSize, totalGates: totalGates };
+}
+
+// ==================== Keyboard events ====================
+function setupKeyboard() {
+    document.addEventListener('keydown', function(e) {
+        var codes = ['KeyW','KeyA','KeyS','KeyD','KeyE','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+        if(codes.indexOf(e.code) !== -1) e.preventDefault();
+        
+        if(e.code === 'KeyW' || e.code === 'ArrowUp') moveForward = true;
+        if(e.code === 'KeyS' || e.code === 'ArrowDown') moveBackward = true;
+        if(e.code === 'KeyA' || e.code === 'ArrowLeft') moveLeft = true;
+        if(e.code === 'KeyD' || e.code === 'ArrowRight') moveRight = true;
+        if(e.code === 'KeyE' && !isQuestionActive && gameRunning) checkGateInteraction();
+    }, true);
+    
+    document.addEventListener('keyup', function(e) {
+        if(e.code === 'KeyW' || e.code === 'ArrowUp') moveForward = false;
+        if(e.code === 'KeyS' || e.code === 'ArrowDown') moveBackward = false;
+        if(e.code === 'KeyA' || e.code === 'ArrowLeft') moveLeft = false;
+        if(e.code === 'KeyD' || e.code === 'ArrowRight') moveRight = false;
+    }, true);
+}
+
+// ==================== Questions ====================
+function addQuestion() {
+    var s = document.getElementById('sentence').value.trim();
+    var a = document.getElementById('correctAnswer').value.trim();
+    var w1 = document.getElementById('wrongAnswer1').value.trim();
+    var w2 = document.getElementById('wrongAnswer2').value.trim();
+    var t = document.getElementById('tenseSelect').value;
+    if(!s || s.indexOf('___') === -1) { alert('⚠️ Add ___ in the sentence'); return; }
+    if(!a || !w1 || !w2) { alert('⚠️ Fill all fields'); return; }
+    questions.push({ sentence: s, answer: a, wrong: [w1, w2], tense: t, explanation: t });
+    document.getElementById('sentence').value = '';
+    document.getElementById('correctAnswer').value = '';
+    document.getElementById('wrongAnswer1').value = '';
+    document.getElementById('wrongAnswer2').value = '';
+    updateQuestionsList();
+}
+
+function loadExamples() {
+    questions = [];
+    for(var i = 0; i < window.defaultQuestions.length; i++) {
+        var q = window.defaultQuestions[i];
+        questions.push({ sentence: q.sentence, answer: q.answer, wrong: [q.wrong1, q.wrong2], tense: q.tense, explanation: q.explanation });
+    }
+    updateQuestionsList();
+}
+
+function clearAllQuestions() { if(confirm('Clear all?')) { questions = []; updateQuestionsList(); } }
+function removeQuestion(idx) { questions.splice(idx, 1); updateQuestionsList(); }
+
+function updateQuestionsList() {
+    var c = document.getElementById('questionsList');
+    if(questions.length === 0) {
+        c.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No questions</div>';
+        document.getElementById('startBtn').disabled = true; return;
+    }
+    c.innerHTML = '';
+    for(var i = 0; i < questions.length; i++) {
+        var q = questions[i];
+        var d = document.createElement('div');
+        d.className = 'question-item';
+        d.innerHTML = '<div><div class="question-text">' + q.sentence.replace('___', '___') + '</div><div class="question-answer">✓ ' + q.answer + ' | ' + q.tense + '</div></div><button class="btn-danger" style="padding:5px 10px" onclick="removeQuestion(' + i + ')">✖</button>';
+        c.appendChild(d);
+    }
+    document.getElementById('startBtn').disabled = false;
+}
+
+// ==================== Dynamic maze ====================
+function generateMaze(size) {
+    maze = [];
+    for(var i = 0; i < size; i++) {
+        maze[i] = [];
+        for(var j = 0; j < size; j++) {
+            maze[i][j] = 1; // Everything is wall by default
+        }
+    }
+    
+    // Recursive Backtracker algorithm to create complete maze
+    var stack = [];
+    var startR = 1, startC = 1;
+    maze[startR][startC] = 0;
+    stack.push({r: startR, c: startC});
+    
+    while(stack.length > 0) {
+        var current = stack[stack.length - 1];
+        var neighbors = [];
+        var dirs = [[-2,0],[2,0],[0,-2],[0,2]];
+        
+        for(var d = 0; d < dirs.length; d++) {
+            var nr = current.r + dirs[d][0];
+            var nc = current.c + dirs[d][1];
+            if(nr > 0 && nr < size-1 && nc > 0 && nc < size-1 && maze[nr][nc] === 1) {
+                neighbors.push({r: nr, c: nc, dr: dirs[d][0], dc: dirs[d][1]});
+            }
+        }
+        
+        if(neighbors.length > 0) {
+            var next = neighbors[Math.floor(Math.random() * neighbors.length)];
+            // Remove wall between current and next cell
+            maze[current.r + next.dr/2][current.c + next.dc/2] = 0;
+            maze[next.r][next.c] = 0;
+            stack.push({r: next.r, c: next.c});
+        } else {
+            stack.pop();
+        }
+    }
+    
+    // Add some random openings to ease movement
+    var openCells = Math.floor(size * size * 0.05);
+    for(var k = 0; k < openCells; k++) {
+        var rr = Math.floor(Math.random() * (size-2)) + 1;
+        var cc = Math.floor(Math.random() * (size-2)) + 1;
+        maze[rr][cc] = 0;
+    }
+    
+    // Ensure start and end are open
+    maze[1][1] = 0;
+    maze[1][2] = 0; // Exit path from start
+    maze[size-2][size-2] = 0;
+    maze[size-3][size-2] = 0;
+}
+
+// ==================== Create path for gates ====================
+function findGatePath(size) {
+    // Find BFS path from (1,1) to (size-2, size-2)
+    var visited = [];
+    var parent = [];
+    for(var i = 0; i < size; i++) {
+        visited[i] = [];
+        parent[i] = [];
+        for(var j = 0; j < size; j++) {
+            visited[i][j] = false;
+            parent[i][j] = null;
+        }
+    }
+    
+    var queue = [{r: 1, c: 1}];
+    visited[1][1] = true;
+    
+    while(queue.length > 0) {
+        var curr = queue.shift();
+        if(curr.r === size-2 && curr.c === size-2) break;
+        
+        var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for(var d = 0; d < dirs.length; d++) {
+            var nr = curr.r + dirs[d][0];
+            var nc = curr.c + dirs[d][1];
+            if(nr >= 0 && nr < size && nc >= 0 && nc < size && !visited[nr][nc] && maze[nr][nc] === 0) {
+                visited[nr][nc] = true;
+                parent[nr][nc] = {r: curr.r, c: curr.c};
+                queue.push({r: nr, c: nc});
+            }
+        }
+    }
+    
+    // Trace path from end to start
+    var path = [];
+    var curr = {r: size-2, c: size-2};
+    while(curr && (curr.r !== 1 || curr.c !== 1)) {
+        path.unshift(curr);
+        curr = parent[curr.r][curr.c];
+    }
+    path.unshift({r: 1, c: 1});
+    
+    return path;
+}
+
+// ==================== Create gates ====================
+function createGates() {
+    for(var i = 0; i < gates.length; i++) {
+        if(gates[i].mesh && gates[i].mesh.parent) scene.remove(gates[i].mesh);
+        if(gates[i].light && gates[i].light.parent) scene.remove(gates[i].light);
+    }
+    gates = [];
+    
+    // Find path through maze
+    var path = findGatePath(mazeSize);
+    
+    // Distribute gates along the path
+    var gatePositions = [];
+    var step = Math.max(1, Math.floor(path.length / (totalGates + 1)));
+    
+    for(var i = 1; i <= totalGates; i++) {
+        var idx = Math.min(i * step, path.length - 1);
+        gatePositions.push({x: path[idx].c, z: path[idx].r});
+    }
+    
+    for(var i = 0; i < totalGates; i++) {
+        var pos = gatePositions[i];
+        var isOpened = i < currentGateIdx;
+        
+        var gateColor = isOpened ? 0x2ecc71 : 0xf39c12;
+        var emissive = isOpened ? 0x27ae60 : 0xe67e22;
+        
+        var gateMat = new THREE.MeshStandardMaterial({
+            color: gateColor, emissive: emissive, emissiveIntensity: isOpened ? 0.3 : 0.8,
+            metalness: 0.4, roughness: 0.3, transparent: true, opacity: isOpened ? 0.3 : 0.9
+        });
+        
+        var gateGeo = new THREE.BoxGeometry(2.5, 3, 0.3);
+        var gateMesh = new THREE.Mesh(gateGeo, gateMat);
+        gateMesh.position.set(pos.x * cellSize + cellSize/2, 1.5, pos.z * cellSize + cellSize/2);
+        
+        // Rotate gate to be perpendicular to path
+        if(i < path.length - 1) {
+            var next = path[i * step + 1] || path[path.length - 1];
+            var dx = next.c - pos.x;
+            var dz = next.r - pos.z;
+            if(dx !== 0) gateMesh.rotation.y = Math.PI/2; // Horizontal gate
+        }
+        
+        gateMesh.userData = { gateIndex: i, isOpened: isOpened };
+        scene.add(gateMesh);
+        
+        var light = new THREE.PointLight(gateColor, isOpened ? 0.2 : 1.2, 8);
+        light.position.copy(gateMesh.position);
+        scene.add(light);
+        
+        gates.push({ mesh: gateMesh, light: light, position: pos, isOpened: isOpened });
+    }
+    
+    // Final gate
+    if(exitMesh) scene.remove(exitMesh);
+    var exitMat = new THREE.MeshStandardMaterial({ color: 0x2ecc71, emissive: 0x27ae60, emissiveIntensity: 0.6 });
+    exitMesh = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3, 0.3), exitMat);
+    var endPos = gatePositions[gatePositions.length - 1] || {x: mazeSize-2, z: mazeSize-2};
+    exitMesh.position.set(endPos.x * cellSize + cellSize/2, 1.5, endPos.z * cellSize + cellSize/2);
+    scene.add(exitMesh);
+}
+
+function createMaze3D() {
+    for(var i = 0; i < walls.length; i++) if(walls[i].parent) scene.remove(walls[i]);
+    walls = [];
+    if(exitMesh) scene.remove(exitMesh);
+    
+    var wallMat = new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.7, metalness: 0.05 });
+    var wallGeo = new THREE.BoxGeometry(cellSize, 3, cellSize);
+    
+    for(var y = 0; y < maze.length; y++) {
+        for(var x = 0; x < maze.length; x++) {
+            if(maze[y][x] === 1) {
+                var wall = new THREE.Mesh(wallGeo, wallMat);
+                wall.position.set(x * cellSize + cellSize/2, 1.5, y * cellSize + cellSize/2);
+                wall.castShadow = true;
+                scene.add(wall);
+                walls.push(wall);
+            }
+        }
+    }
+}
+
+function createFloorAndCeiling() {
+    if(floorMesh) scene.remove(floorMesh);
+    var size = mazeSize * cellSize;
+    var geo = new THREE.PlaneGeometry(size, size);
+    
+    floorMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x2c2c3a, roughness: 0.8 }));
+    floorMesh.rotation.x = -Math.PI/2;
+    floorMesh.position.set(size/2, 0, size/2);
+    scene.add(floorMesh);
+    
+    var ceil = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x1a1a2e, emissive: 0x050520, emissiveIntensity: 0.2 }));
+    ceil.rotation.x = Math.PI/2;
+    ceil.position.set(size/2, 3.2, size/2);
+    scene.add(ceil);
+}
+
+// ==================== Minimap ====================
+function updateMinimap() {
+    var map = document.getElementById('minimap');
+    if(!map || !maze.length) return;
+    map.style.display = 'grid';
+    map.style.gridTemplateColumns = 'repeat(' + mazeSize + ', 1fr)';
+    map.innerHTML = '';
+    
+    var px = Math.floor(camera.position.x / cellSize);
+    var pz = Math.floor(camera.position.z / cellSize);
+    
+    for(var y = 0; y < mazeSize; y++) {
+        for(var x = 0; x < mazeSize; x++) {
+            var cell = document.createElement('div');
+            cell.className = 'minimap-cell';
+            
+            if(px === x && pz === y) {
+                cell.className += ' minimap-player';
+                cell.textContent = '●';
+            } else {
+                var isGate = false;
+                for(var g = 0; g < gates.length; g++) {
+                    if(gates[g].position.x === x && gates[g].position.z === y) {
+                        isGate = true;
+                        if(gates[g].isOpened) cell.className += ' minimap-gate-open';
+                        else cell.className += ' minimap-gate';
+                        break;
+                    }
+                }
+                if(!isGate && x === mazeSize-2 && y === mazeSize-2) {
+                    cell.className += ' minimap-exit';
+                    cell.textContent = '★';
+                } else if(!isGate && maze[y][x] === 1) {
+                    cell.className += ' minimap-wall';
+                } else if(!isGate) {
+                    cell.className += ' minimap-path';
+                }
+            }
+            map.appendChild(cell);
+        }
+    }
+}
+
+// ==================== Three.js ====================
+function initThree() {
+    var canvas = document.getElementById('gameCanvas');
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050b1a);
+    scene.fog = new THREE.FogExp2(0x050b1a, 0.008 + (mazeSize - 7) * 0.002);
+    
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
+    camera.rotation.order = 'YXZ';
+    
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    var dirLight = new THREE.DirectionalLight(0xfff5e6, 0.4);
+    dirLight.position.set(10, 15, 10);
+    scene.add(dirLight);
+    
+    var camLight = new THREE.PointLight(0xffcc88, 0.6, 12);
+    camera.add(camLight);
+    scene.add(camera);
+    
+    canvas.setAttribute('tabindex', '1');
+    canvas.style.outline = 'none';
+    canvas.addEventListener('click', function() { canvas.requestPointerLock(); });
+    
+    document.addEventListener('pointerlockchange', function() {
+        isPointerLock = document.pointerLockElement === canvas;
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if(isPointerLock && !isQuestionActive && gameRunning) {
+            mouseX -= e.movementX * 0.002;
+            mouseY -= e.movementY * 0.002;
+            mouseY = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, mouseY));
+        }
+    });
+    
+    window.addEventListener('resize', function() {
+        if(camera && renderer) {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    });
+    
+    setupKeyboard();
+}
+
+// ==================== Movement ====================
+function updateMovement(dt) {
+    if(!gameRunning || isQuestionActive || !camera) return;
+    
+    var dx = 0, dz = 0;
+    if(moveForward) dz -= 1;
+    if(moveBackward) dz += 1;
+    if(moveRight) dx += 1;
+    if(moveLeft) dx -= 1;
+    
+    if(dx !== 0 && dz !== 0) {
+        var len = Math.sqrt(dx*dx + dz*dz);
+        dx /= len; dz /= len;
+    }
+    
+    var sinY = Math.sin(mouseX);
+    var cosY = Math.cos(mouseX);
+    var worldDX = (dx * cosY + dz * sinY);
+    var worldDZ = (-dx * sinY + dz * cosY);
+    
+    var newX = camera.position.x + worldDX * PLAYER_SPEED * dt;
+    var newZ = camera.position.z + worldDZ * PLAYER_SPEED * dt;
+    
+    if(canMove(newX, camera.position.z)) camera.position.x = newX;
+    if(canMove(camera.position.x, newZ)) camera.position.z = newZ;
+    
+    camera.rotation.y = mouseX;
+    camera.rotation.x = mouseY;
+    
+    for(var i = 0; i < gates.length; i++) {
+        if(gates[i].mesh && !gates[i].isOpened) {
+            gates[i].mesh.rotation.y += 0.015;
+            gates[i].mesh.position.y = 1.5 + Math.sin(Date.now() * 0.003 + i) * 0.15;
+        }
+    }
+    
+    checkGateProximity();
+    updateMinimap();
+}
+
+function canMove(x, z) {
+    var r = PLAYER_RADIUS;
+    var pts = [{x:x-r,z:z-r},{x:x+r,z:z-r},{x:x-r,z:z+r},{x:x+r,z:z+r}];
+    for(var i = 0; i < 4; i++) {
+        var gx = Math.floor(pts[i].x / cellSize);
+        var gz = Math.floor(pts[i].z / cellSize);
+        if(gx < 0 || gx >= mazeSize || gz < 0 || gz >= mazeSize) return false;
+        if(maze[gz][gx] === 1) return false;
+    }
+    return true;
+}
+
+// ==================== Gate system ====================
+function checkGateProximity() {
+    if(currentGateIdx >= gates.length) {
+        document.getElementById('interactionPrompt').style.display = 'none';
+        return;
+    }
+    var gate = gates[currentGateIdx];
+    if(!gate || !gate.mesh) return;
+    var dist = Math.sqrt(Math.pow(camera.position.x - gate.mesh.position.x, 2) + Math.pow(camera.position.z - gate.mesh.position.z, 2));
+    var prompt = document.getElementById('interactionPrompt');
+    if(dist < 2.5) {
+        prompt.style.display = 'block';
+        prompt.innerHTML = '🔴 Press E - Gate ' + (currentGateIdx + 1) + '/' + totalGates;
+    } else {
+        prompt.style.display = 'none';
+    }
+}
+
+function checkGateInteraction() {
+    if(currentGateIdx >= gates.length || isQuestionActive) return;
+    var gate = gates[currentGateIdx];
+    if(!gate || !gate.mesh) return;
+    var dist = Math.sqrt(Math.pow(camera.position.x - gate.mesh.position.x, 2) + Math.pow(camera.position.z - gate.mesh.position.z, 2));
+    if(dist < 2.5) showQuestion();
+}
+
+function openCurrentGate() {
+    var gate = gates[currentGateIdx];
+    if(!gate) return;
+    
+    gate.isOpened = true;
+    gate.mesh.material.color.setHex(0x2ecc71);
+    gate.mesh.material.emissive.setHex(0x27ae60);
+    gate.mesh.material.emissiveIntensity = 0.3;
+    gate.mesh.material.opacity = 0.3;
+    gate.light.color.setHex(0x2ecc71);
+    gate.light.intensity = 0.2;
+    
+    var flash = document.createElement('div');
+    flash.className = 'gate-opened-flash';
+    document.getElementById('game-screen').appendChild(flash);
+    setTimeout(function() { flash.remove(); }, 600);
+    
+    currentGateIdx++;
+    
+    if(currentGateIdx < totalGates) {
+        document.getElementById('gateCounter').textContent = '🚪 Gate ' + (currentGateIdx + 1) + ' / ' + totalGates;
+    } else {
+        document.getElementById('gateCounter').textContent = '🎉 All gates opened!';
+        document.getElementById('gateCounter').style.borderColor = '#2ecc71';
+    }
+}
+
+// ==================== Question system ====================
+function showQuestion() {
+    isQuestionActive = true;
+    if(document.pointerLockElement) document.exitPointerLock();
+    if(timerInterval) clearInterval(timerInterval);
+    
+    timeLeft = gameConfig.timePerGate;
+    currentQuestionObj = stageQuestions[currentGateIdx];
+    document.getElementById('questionSentence').innerHTML = currentQuestionObj.sentence.replace('___', '<span class="blank">____</span>');
+    
+    var choices = [currentQuestionObj.answer, currentQuestionObj.wrong[0], currentQuestionObj.wrong[1]];
+    for(var i = choices.length-1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i+1));
+        var t = choices[i]; choices[i] = choices[j]; choices[j] = t;
+    }
+    
+    var c = document.getElementById('choicesContainer');
+    c.innerHTML = '';
+    for(var k = 0; k < choices.length; k++) {
+        var btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choices[k];
+        btn.onclick = function(ch) { return function() { checkAnswer(ch); }; }(choices[k]);
+        c.appendChild(btn);
+    }
+    
+    document.getElementById('questionModal').classList.add('active');
+    
+    timerInterval = setInterval(function() {
+        timeLeft--;
+        document.getElementById('timerText').textContent = timeLeft;
+        var circ = 2 * Math.PI * 36;
+        var off = circ - (timeLeft / gameConfig.timePerGate) * circ;
+        var pc = document.getElementById('timerProgress');
+        if(pc) { pc.style.strokeDashoffset = off; pc.style.stroke = timeLeft <= 10 ? '#e74c3c' : '#f1c40f'; }
+        if(timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
+    }, 1000);
+}
+
+function handleTimeout() {
+    wrongCount++;
+    playerHealth = Math.max(0, playerHealth - 20);
+    document.getElementById('healthFill').style.width = playerHealth + '%';
+    combo = 0;
+    document.getElementById('comboDisplay').textContent = combo;
+    showExplanation(false, '⏰ Time\'s up!<br>Answer: ' + currentQuestionObj.answer + '<br><br>' + currentQuestionObj.explanation);
+}
+
+function checkAnswer(sel) {
+    clearInterval(timerInterval);
+    var ok = (sel === currentQuestionObj.answer);
+    if(ok) {
+        correctCount++; combo++; maxCombo = Math.max(maxCombo, combo);
+        score += 100 + timeLeft * 2 + combo * 10;
+        openCurrentGate();
+    } else {
+        wrongCount++;
+        playerHealth = Math.max(0, playerHealth - 15);
+        document.getElementById('healthFill').style.width = playerHealth + '%';
+        combo = 0;
+    }
+    document.getElementById('scoreDisplay').textContent = score;
+    document.getElementById('comboDisplay').textContent = combo;
+    showExplanation(ok, (ok ? '✅ Correct! Gate opened!' : '❌ Wrong!') + '<br><br>' + currentQuestionObj.explanation);
+}
+
+function showExplanation(ok, msg) {
+    document.getElementById('questionModal').classList.remove('active');
+    document.getElementById('explainTitle').textContent = ok ? '✅ Correct!' : '❌ Wrong';
+    document.getElementById('explainText').innerHTML = msg;
+    document.getElementById('explainModal').classList.add('active');
+}
+
+function closeExplain() {
+    document.getElementById('explainModal').classList.remove('active');
+    if(playerHealth <= 0) { endGame(false); return; }
+    
+    if(currentGateIdx >= totalGates) {
+        endGame(true);
+    } else {
+        isQuestionActive = false;
+        document.getElementById('gameCanvas').focus();
+    }
+}
+
+// ==================== Start game ====================
+function startGame() {
+    if(questions.length < 3) { alert('⚠️ At least 3 questions required'); return; }
+    if(!window.THREE_LOADED) { alert('❌ Three.js not loaded'); return; }
+    
+    gameConfig.timePerGate = parseInt(document.getElementById('timeSlider').value);
+    
+    // ✅ Calculate maze size and number of gates based on number of questions
+    var calc = calculateMazeAndGates(questions.length);
+    console.log('📐 Maze size:', calc.mazeSize, '| Gates:', calc.totalGates, '| Questions:', questions.length);
+    
+    score = 0; correctCount = 0; wrongCount = 0; combo = 0; maxCombo = 0;
+    playerHealth = 100; currentStage = 1; currentGateIdx = 0;
+    
+    document.getElementById('scoreDisplay').textContent = '0';
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    
+    prepareGame(calc.mazeSize, calc.totalGates);
+    initThree();
+    startLevel(calc.mazeSize, calc.totalGates);
+    
+    var last = performance.now();
+    function animate() {
+        if(document.getElementById('game-screen').style.display === 'none') return;
+        var now = performance.now();
+        var dt = Math.min(0.033, (now - last) / 1000);
+        last = now;
+        
+        updateMovement(dt);
+        
+        if(exitMesh) {
+            exitMesh.rotation.y += 0.02;
+            exitMesh.position.y = 1.5 + Math.sin(Date.now() * 0.004) * 0.1;
+        }
+        
+        if(renderer) renderer.render(scene, camera);
+        animationId = requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+function prepareGame(ms, tg) {
+    // Shuffle questions and select first totalGates questions
+    var shuf = questions.slice();
+    for(var i = shuf.length-1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i+1));
+        var t = shuf[i]; shuf[i] = shuf[j]; shuf[j] = t;
+    }
+    stageQuestions = shuf.slice(0, tg);
+}
+
+function startLevel(ms, tg) {
+    mazeSize = ms;
+    totalGates = tg;
+    currentGateIdx = 0;
+    playerHealth = 100;
+    document.getElementById('healthFill').style.width = '100%';
+    document.getElementById('comboDisplay').textContent = '0';
+    
+    generateMaze(mazeSize);
+    createMaze3D();
+    createFloorAndCeiling();
+    createGates();
+    
+    camera.position.set(1 * cellSize + cellSize/2, 1.7, 1 * cellSize + cellSize/2);
+    mouseX = 0; mouseY = 0;
+    
+    document.getElementById('gateCounter').textContent = '🚪 Gate 1 / ' + totalGates;
+    document.getElementById('gateCounter').style.borderColor = '#f39c12';
+    document.getElementById('mazeInfo').textContent = 'Maze: ' + mazeSize + '×' + mazeSize + ' | Gates: ' + totalGates;
+    
+    gameRunning = true;
+    
+    updateMinimap();
+    if(renderer) renderer.render(scene, camera);
+    
+    setTimeout(function() {
+        document.getElementById('gameCanvas').focus();
+        document.getElementById('gameCanvas').requestPointerLock();
+    }, 200);
+}
+
+function endGame(win) {
+    if(timerInterval) clearInterval(timerInterval);
+    if(document.pointerLockElement) document.exitPointerLock();
+    isQuestionActive = false;
+    gameRunning = false;
+    
+    var total = correctCount + wrongCount;
+    var acc = total > 0 ? Math.round(correctCount / total * 100) : 0;
+    
+    document.getElementById('resultTitle').textContent = win ? '🎉 You opened all gates!' : '💀 You lost!';
+    document.getElementById('resultTitle').style.color = win ? '#2ecc71' : '#e74c3c';
+    document.getElementById('resultStats').innerHTML = 
+        '<div>⭐ Score: <strong style="color:#f1c40f; font-size:24px">' + score + '</strong></div>' +
+        '<div>✅ Correct: ' + correctCount + '</div>' +
+        '<div>❌ Wrong: ' + wrongCount + '</div>' +
+        '<div>🔥 Combo: ' + maxCombo + '</div>' +
+        '<div>🎯 Accuracy: ' + acc + '%</div>' +
+        '<div>📐 Maze: ' + mazeSize + '×' + mazeSize + '</div>' +
+        '<div>🚪 Gates: ' + totalGates + '</div>';
+    document.getElementById('resultModal').classList.add('active');
+    
+    if(animationId) cancelAnimationFrame(animationId);
+    if(renderer) { renderer.dispose(); renderer = null; }
+    scene = null;
+}
+
+function restartGame() { document.getElementById('resultModal').classList.remove('active'); startGame(); }
+
+function backToMenu() {
+    if(timerInterval) clearInterval(timerInterval);
+    if(document.pointerLockElement) document.exitPointerLock();
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'flex';
+    document.getElementById('resultModal').classList.remove('active');
+    document.getElementById('explainModal').classList.remove('active');
+    document.getElementById('questionModal').classList.remove('active');
+    isQuestionActive = false;
+    gameRunning = false;
+    if(animationId) cancelAnimationFrame(animationId);
+    if(renderer) { renderer.dispose(); renderer = null; }
+    scene = null;
+}
+</script>
+</body>
+</html>

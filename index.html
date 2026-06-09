@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Master - English Learning Program</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            margin-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .skills-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .skill-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skill-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .skill-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+        }
+
+        .skill-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .skill-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .skill-desc {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .skill-count {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        /* Different colors for each skill */
+        .grammar::before { background: #e74c3c; }
+        .grammar .skill-icon { color: #e74c3c; }
+        
+        .vocabulary::before { background: #3498db; }
+        .vocabulary .skill-icon { color: #3498db; }
+        
+        .listening::before { background: #2ecc71; }
+        .listening .skill-icon { color: #2ecc71; }
+        
+        .speaking::before { background: #f39c12; }
+        .speaking .skill-icon { color: #f39c12; }
+        
+        .reading::before { background: #9b59b6; }
+        .reading .skill-icon { color: #9b59b6; }
+        
+        .writing::before { background: #1abc9c; }
+        .writing .skill-icon { color: #1abc9c; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .game-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #667eea;
+            color: white;
+        }
+
+        .game-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.02);
+        }
+
+        .close-btn {
+            background: #e74c3c;
+            margin-top: 20px;
+        }
+
+        .close-btn:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            .skills-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎓 English Master</h1>
+        <p>Choose the skill you want to study today</p>
+    </div>
+
+    <div class="skills-container">
+        <div class="skill-card grammar" onclick="openSkill('grammar')">
+            <div class="skill-icon">📚</div>
+            <div class="skill-title">Grammar</div>
+            <div class="skill-desc">Learn English grammar in an interactive and fun way</div>
+            <div class="skill-count">6 Games Available</div>
+        </div>
+
+        <div class="skill-card vocabulary" onclick="openSkill('vocabulary')">
+            <div class="skill-icon">📝</div>
+            <div class="skill-title">Vocabulary</div>
+            <div class="skill-desc">Memorize new words with fun and diverse games</div>
+            <div class="skill-count">3 Games Available</div>
+        </div>
+
+        <div class="skill-card listening" onclick="openSkill('listening')">
+            <div class="skill-icon">🎧</div>
+            <div class="skill-title">Listening</div>
+            <div class="skill-desc">Develop listening skills through audio exercises</div>
+            <div class="skill-count">2 Games Available</div>
+        </div>
+
+        <div class="skill-card speaking" onclick="openSkill('speaking')">
+            <div class="skill-icon">🎤</div>
+            <div class="skill-title">Speaking</div>
+            <div class="skill-desc">Practice speaking with realistic life situations</div>
+            <div class="skill-count">2 Games Available</div>
+        </div>
+
+        <div class="skill-card reading" onclick="openSkill('reading')">
+            <div class="skill-icon">📖</div>
+            <div class="skill-title">Reading</div>
+            <div class="skill-desc">Read diverse texts and understand the correct meaning</div>
+            <div class="skill-count">3 Games Available</div>
+        </div>
+
+        <div class="skill-card writing" onclick="openSkill('writing')">
+            <div class="skill-icon">✍️</div>
+            <div class="skill-title">Writing</div>
+            <div class="skill-desc">Practice correct writing with progressive exercises</div>
+            <div class="skill-count">2 Games Available</div>
+        </div>
+    </div>
+
+    <!-- Popup window to choose a game -->
+    <div class="modal" id="gameModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Choose Your Game</h2>
+            <div id="gamesList"></div>
+            <button class="game-btn close-btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Games data for each skill
+        const gamesData = {
+            grammar: [
+                { name: "🧩 Sentence Builder", desc: "Arrange words to form a correct sentence", link: "sentence-builder.html" },
+                { name: "⚔️ Grammar Battle", desc: "Test your knowledge with quick questions", link: "grammar-battle.html" },
+                { name: "🎯 Spot the Mistake", desc: "Find the mistake in the sentence", link: "spot-mistakes.html"},
+                { name: "🌀 Tense Maze", desc: "Choose the correct tense to win", link : "grammar-maze.html" },
+                { name: "🌀 The Maze", desc: "Find the right path", link: 'maze-runner.html'}
+                        ],
+            vocabulary: [
+                { name: "🔗 Word Matching", desc: "Match the word with its meaning or image", link: "matching-game.html" },
+                { name: "🔗 Word Formation", desc: "Assemble letters to form a word", link: "pacman.html" },
+                { name: "⚔️ Word Battle", desc: "Test your knowledge of words and their meanings", link: "word-battle.html" }
+            ],
+            listening: [
+                { name: "🎧 Audio Detective", desc: "Listen and find the missing word", link: "vocal_ded.html" },
+                { name: "🎵 Word Rhythm", desc: "Repeat what you hear accurately", link: "Word-Rhythm.html" }
+                
+            ],
+            speaking: [
+                { name: "🎭 Silent Theater", desc: "Act out a situation in English" },
+                { name: "👥 Time Dialogue", desc: "Simulate conversations from real situations" }
+            ],
+            reading: [
+                { name: "📖 Branching Story", desc: "Choose the story path with correct answers" },
+                { name: "🔎 Search for Meaning", desc: "Read and understand the deep meaning" },
+                { name: "⚡ Speed Reading", desc: "Read fast and answer fast" }
+            ],
+            writing: [
+                { name: "✍️ Little Writer", desc: "Complete the story with your writing" },
+                { name: "🏗️ Text Builder", desc: "Use keywords to write a text" }
+            ]
+        };
+
+        // Open games window
+      
+function openSkill(skill) {
+    const modal = document.getElementById('gameModal');
+    const title = document.getElementById('modalTitle');
+    const list = document.getElementById('gamesList');
+    
+    const skillNames = {
+        grammar: 'Grammar',
+        vocabulary: 'Vocabulary',
+        listening: 'Listening',
+        speaking: 'Speaking',
+        reading: 'Reading',
+        writing: 'Writing'
+    };
+    
+    title.textContent = `${skillNames[skill]} Games`;
+    list.innerHTML = '';
+    
+    gamesData[skill].forEach(game => {
+        const btn = document.createElement('button');
+        btn.className = 'game-btn';
+        
+        // If the game has a link, open it directly
+        if (game.link && game.link !== '#') {
+            btn.onclick = () => {
+                window.location.href = game.link;
+            };
+        } else {
+            btn.onclick = () => {
+                alert(`🚧 Game "${game.name}" is under development!\nWe'll build it in the next steps.`);
+            };
+        }
+        
+        btn.innerHTML = `
+            <div style="font-size: 1.3rem; margin-bottom: 5px;">${game.name}</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">${game.desc}</div>
+        `;
+        list.appendChild(btn);
+    });
+    
+    modal.style.display = 'flex';
+}
+        // Close the window
+        function closeModal() {
+            document.getElementById('gameModal').style.display = 'none';
+        }
+
+        // Close the window when clicking outside it
+        window.onclick = function(event) {
+            const modal = document.getElementById('gameModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

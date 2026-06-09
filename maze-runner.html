@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المتاهة اللغوية 3D - English Master</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <style>
+        :root { --primary: #667eea; --secondary: #764ba2; --success: #2ecc71; --error: #e74c3c; --warning: #f39c12; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: linear-gradient(135deg, var(--primary), var(--secondary)); min-height: 100vh; overflow: hidden; }
+
+        /* ===== شاشة الإعدادات ===== */
+        #setup-screen {
+            position: absolute; inset: 0; z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            transition: opacity 0.3s;
+        }
+        .setup-panel {
+            background: white; width: 90%; max-width: 700px; max-height: 90vh;
+            border-radius: 20px; padding: 25px; overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .setup-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
+        .setup-header h1 { color: var(--primary); font-size: 1.8rem; }
+        .setup-header p { color: #666; font-size: 0.95rem; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .full-row { margin-bottom: 15px; }
+        input, select {
+            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 0.95rem; transition: 0.2s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
+        
+        .btn {
+            padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer;
+            font-weight: 600; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #5a67d8; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .q-list { max-height: 180px; overflow-y: auto; margin: 15px 0; border: 1px solid #eee; border-radius: 8px; padding: 5px; background: #fafafa; }
+        .q-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; 
+            background: white; border-radius: 6px; margin-bottom: 5px;
+        }
+        .q-item:last-child { border-bottom: none; }
+        .q-item strong { color: var(--primary); margin-left: 5px; }
+        .q-actions { display: flex; gap: 5px; }
+
+        .settings-row { display: flex; gap: 20px; margin: 15px 0; flex-wrap: wrap; background: #f8f9fa; padding: 10px; border-radius: 8px; }
+        .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+        .toggle input { width: auto; margin: 0; }
+
+        .file-btn { position: relative; overflow: hidden; }
+        .file-btn input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+
+        .start-btn { width: 100%; padding: 14px; font-size: 1.1rem; margin-top: 10px; border-radius: 12px; }
+
+        /* ===== شاشة اللعبة ===== */
+        #game-screen { 
+            display: none; position: relative; width: 100%; height: 100vh; overflow: hidden; 
+        }
+        #game-canvas { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; 
+        }
+        .hud { 
+            position: absolute; top: 15px; left: 15px; z-index: 10; 
+            background: rgba(255,255,255,0.95); padding: 12px 18px; border-radius: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); pointer-events: none;
+        }
+        .hud div { margin: 5px 0; font-weight: bold; color: #333; font-size: 0.95rem; }
+        .hud span { color: var(--primary); float: left; }
+        
+        #question-btn {
+            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #3498db, #2980b9); color: white;
+            padding: 16px 35px; border-radius: 50px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; display: none; z-index: 10; box-shadow: 0 6px 20px rgba(52,152,219,0.5);
+            border: 3px solid white; animation: bounce 1.5s infinite; pointer-events: auto;
+        }
+        #question-btn.show { display: block; }
+        @keyframes bounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }
+
+        #question-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none;
+            align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(5px);
+        }
+        #question-modal.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: modalIn 0.3s; }
+        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-content h3 { color: var(--primary); margin-bottom: 15px; font-size: 1.5rem; }
+        .q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .q-opt { padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: 0.2s; background: white; font-size: 1rem; }
+        .q-opt:hover { border-color: var(--primary); background: #f0f4ff; transform: translateY(-2px); }
+        .q-opt.correct { background: #e8f8f0; border-color: var(--success); color: #27ae60; }
+        .q-opt.wrong { background: #fdeaea; border-color: var(--error); color: #c0392b; }
+        .result-msg { margin-top: 15px; padding: 12px; border-radius: 10px; display: none; font-weight: bold; }
+        .result-msg.show { display: block; }
+        .result-msg.success { background: #e8f8f0; color: #27ae60; }
+        .result-msg.error { background: #fdeaea; color: #c0392b; }
+        .btn-continue { margin-top: 20px; padding: 14px 35px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; cursor: pointer; font-weight: bold; font-size: 1.1rem; display: none; }
+        .btn-continue.show { display: inline-block; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+        .back-btn { position: absolute; top: 15px; right: 15px; color: white; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 8px; text-decoration: none; z-index: 10; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); pointer-events: auto; }
+        .back-btn:hover { background: rgba(0,0,0,0.7); }
+        .instructions { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: white; padding: 10px 20px; border-radius: 8px; z-index: 10; font-size: 0.9rem; backdrop-filter: blur(3px); pointer-events: none; }
+        
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .q-opts { grid-template-columns: 1fr; } .q-actions { flex-direction: column; } }
+    </style>
+</head>
+<body>
+
+    <!-- ===== شاشة إعدادات المعلم ===== -->
+    <div id="setup-screen">
+        <div class="setup-panel">
+            <div class="setup-header">
+                <h1>⚙️ إعداد المتاهة اللغوية</h1>
+                <p>أضف الأسئلة، وستبني المتاهة تلقائياً حسب عددها</p>
+            </div>
+
+            <div class="full-row">
+                <label style="font-weight:bold; color:#555; display:block; margin-bottom:5px;">نص السؤال:</label>
+                <input type="text" id="qInput" placeholder="مثال: What is the past of 'go'?">
+            </div>
+            <div class="form-row">
+                <input type="text" id="o1" placeholder="الخيار 1 (A)">
+                <input type="text" id="o2" placeholder="الخيار 2 (B)">
+                <input type="text" id="o3" placeholder="الخيار 3 (C)">
+                <input type="text" id="o4" placeholder="الخيار 4 (D)">
+            </div>
+            <div class="form-row" style="align-items: flex-end;">
+                <div>
+                    <label style="font-weight:bold; color:#555; display:block; margin-bottom:5px;">الإجابة الصحيحة:</label>
+                    <select id="correctIdx">
+                        <option value="1">الخيار الأول</option>
+                        <option value="2">الخيار الثاني</option>
+                        <option value="3">الخيار الثالث</option>
+                        <option value="4">الخيار الرابع</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; flex-grow:1;">
+                    <button id="mainActionBtn" class="btn btn-primary" onclick="saveQuestion()" style="flex:2; height: 42px;">➕ إضافة السؤال</button>
+                    <button id="cancelBtn" class="btn btn-secondary" onclick="cancelEdit()" style="flex:1; height: 42px; display:none;">🚫 إلغاء</button>
+                </div>
+            </div>
+
+            <div class="q-list" id="qList">
+                <p style="text-align:center; color:#888; padding:20px;">لا توجد أسئلة بعد. ابدأ بإضافة سؤال!</p>
+            </div>
+
+            <div class="settings-row">
+                <label class="toggle"><input type="checkbox" id="enableTimer" checked> ⏱️ تفعيل المؤقت</label>
+                <label class="toggle"><input type="checkbox" id="enableScore" checked> 🏆 تفعيل النقاط</label>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn btn-secondary" onclick="exportQuestions()">📥 تصدير</button>
+                <button class="btn btn-secondary file-btn">📤 استيراد <input type="file" accept=".json" onchange="importQuestions(event)"></button>
+            </div>
+
+            <button class="btn btn-success start-btn" id="startBtn" disabled onclick="startGame()">🎮 ابدأ اللعبة</button>
+        </div>
+    </div>
+
+    <!-- ===== شاشة اللعبة ===== -->
+    <div id="game-screen">
+        <div class="back-btn" onclick="backToSetup()">🔙 إعدادات</div>
+        <div class="hud" id="hud">
+            <div id="hud-score" style="display:none;">النقاط: <span id="score">0</span></div>
+            <div>الخطوة: <span id="step">0</span>/<span id="total">0</span></div>
+            <div id="hud-timer" style="display:none;">الوقت: <span id="timer">00:00</span></div>
+        </div>
+
+        <button id="question-btn" onclick="openQuestionModal()">❓ اضغط للإجابة</button>
+        <div class="instructions">🎮 الأسهم/WASD للحركة | اقترب من الدائرة الزرقاء</div>
+
+        <div id="question-modal">
+            <div class="modal-content">
+                <h3>🔑 أجب لفتح الطريق</h3>
+                <div class="q-text" id="modal-q" style="direction:ltr; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:10px;"></div>
+                <div class="q-opts" id="modal-opts"></div>
+                <div class="result-msg" id="modal-res"></div>
+                <button class="btn-continue" id="btn-continue">🎮 المتابعة</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== متغيرات عامة =====
+        let questions = [], currentStep = 0, score = 0, attempts = 1, seconds = 0, timerInterval;
+        let scene, camera, renderer, player, nextMarker, walls = [], scorchMarks = [];
+        let currentPath = [], gameConfig = { enableTimer: true, enableScore: true };
+        let isModalOpen = false, keys = {};
+        const CELL_SIZE = 4, WALL_HEIGHT = 2, PLAYER_SPEED = 0.15, PLAYER_RADIUS = 0.7;
+        let editIndex = -1;
+
+        // ===== إدارة الأسئلة =====
+        function updateQList() {
+            const list = document.getElementById('qList');
+            if(questions.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">لا توجد أسئلة بعد. ابدأ بإضافة سؤال!</p>';
+                document.getElementById('startBtn').disabled = true;
+                return;
+            }
+            list.innerHTML = questions.map((q,i) => `
+                <div class="q-item" style="${i === editIndex ? 'border:2px solid #f39c12; background:#fff8e1;' : ''}">
+                    <div><strong>${i+1}.</strong> ${q.q.substring(0,35)}${q.q.length>35?'...':''}</div>
+                    <div class="q-actions">
+                        <button class="btn btn-warning" style="padding:4px 8px; font-size:0.8rem;" onclick="editQuestion(${i})">✏️</button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="removeQuestion(${i})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('startBtn').disabled = questions.length < 1;
+        }
+
+        function saveQuestion() {
+            const qText = document.getElementById('qInput').value.trim();
+            const opts = [1,2,3,4].map(i => document.getElementById('o'+i).value.trim());
+            const corr = parseInt(document.getElementById('correctIdx').value);
+            
+            if(!qText || opts.some(o=>!o)) return alert('⚠️ الرجاء ملء جميع الحقول!');
+
+            const newQ = { q: qText, opts: opts, corr: corr };
+
+            if(editIndex !== -1) {
+                questions[editIndex] = newQ;
+                editIndex = -1;
+                document.getElementById('mainActionBtn').innerHTML = '➕ إضافة السؤال';
+                document.getElementById('mainActionBtn').classList.remove('btn-warning');
+                document.getElementById('mainActionBtn').classList.add('btn-primary');
+                document.getElementById('cancelBtn').style.display = 'none';
+            } else {
+                questions.push(newQ);
+            }
+
+            document.getElementById('qInput').value = '';
+            ['o1','o2','o3','o4'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('correctIdx').value = '1';
+            
+            updateQList();
+            document.getElementById('qInput').focus();
+        }
+
+        function editQuestion(index) {
+            editIndex = index;
+            const q = questions[index];
+            document.getElementById('qInput').value = q.q;
+            document.getElementById('o1').value = q.opts[0];
+            document.getElementById('o2').value = q.opts[1];
+            document.getElementById('o3').value = q.opts[2];
+            document.getElementById('o4').value = q.opts[3];
+            document.getElementById('correctIdx').value = q.corr;
+
+            document.getElementById('mainActionBtn').innerHTML = '💾 تعديل وحفظ';
+            document.getElementById('mainActionBtn').classList.remove('btn-primary');
+            document.getElementById('mainActionBtn').classList.add('btn-warning');
+            document.getElementById('cancelBtn').style.display = 'block';
+            updateQList();
+            document.getElementById('qInput').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editIndex = -1;
+            document.getElementById('mainActionBtn').innerHTML = '➕ إضافة السؤال';
+            document.getElementById('mainActionBtn').classList.remove('btn-warning');
+            document.getElementById('mainActionBtn').classList.add('btn-primary');
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('qInput').value = '';
+            ['o1','o2','o3','o4'].forEach(id => document.getElementById(id).value = '');
+            updateQList();
+        }
+
+        function removeQuestion(i) {
+            if(confirm('هل أنت متأكد من حذف هذا السؤال؟')) {
+                questions.splice(i, 1);
+                if(editIndex === i) cancelEdit();
+                updateQList();
+            }
+        }
+
+        function exportQuestions() {
+            if(questions.length===0) return alert('أضف أسئلة أولاً!');
+            const blob = new Blob([JSON.stringify(questions, null, 2)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = 'maze-questions.json'; a.click();
+        }
+
+        function importQuestions(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if(!Array.isArray(data) || !data.every(q => q.q && q.opts && q.corr)) throw new Error('ملف غير صالح');
+                    questions = data;
+                    cancelEdit();
+                    updateQList();
+                    alert(`✅ تم استيراد ${questions.length} سؤال بنجاح!`);
+                } catch(err) { alert('❌ خطأ في الملف: ' + err.message); }
+            };
+            reader.readAsText(file); e.target.value = '';
+        }
+
+        // ===== مولد المتاهة =====
+        function generateSnakePath(steps) {
+            let path = [{r:0, c:0}];
+            let r=0, c=0, dir=1;
+            for(let i=0; i<steps; i++) {
+                c += dir;
+                if(c >= 8) { r++; c=7; dir=-1; }
+                else if(c < 0) { r++; c=0; dir=1; }
+                if(r < 8) path.push({r, c});
+            }
+            return path;
+        }
+
+        // ===== بدء اللعبة =====
+        function startGame() {
+            if(questions.length < 1) return alert('أضف سؤالاً واحداً على الأقل!');
+            
+            gameConfig.enableTimer = document.getElementById('enableTimer').checked;
+            gameConfig.enableScore = document.getElementById('enableScore').checked;
+            
+            currentPath = generateSnakePath(questions.length);
+            currentStep = 0; score = 0; attempts = 1; seconds = 0;
+            isModalOpen = false;
+
+            document.getElementById('total').textContent = currentPath.length - 1;
+            document.getElementById('hud-score').style.display = gameConfig.enableScore ? 'block' : 'none';
+            document.getElementById('hud-timer').style.display = gameConfig.enableTimer ? 'block' : 'none';
+            document.getElementById('step').textContent = '0';
+            document.getElementById('score').textContent = '0';
+            document.getElementById('timer').textContent = '00:00';
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+
+            try {
+                init3D();
+                if(gameConfig.enableTimer) startTimer();
+            } catch(err) {
+                console.error("خطأ في تهيئة اللعبة:", err);
+                alert("حدث خطأ أثناء تحميل اللعبة. الرجاء تحديث الصفحة.");
+                backToSetup();
+            }
+        }
+
+        function backToSetup() {
+            clearInterval(timerInterval);
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'flex';
+            if(scene) { scene.clear(); }
+            if(renderer) { renderer.dispose(); }
+            scene = null; camera = null; player = null; nextMarker = null; walls = []; scorchMarks = [];
+        }
+
+        // ===== Three.js =====
+        function init3D() {
+            const container = document.getElementById('game-screen');
+            
+            if(!renderer) {
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.domElement.id = 'game-canvas';
+                container.appendChild(renderer.domElement);
+                
+                window.addEventListener('resize', onWindowResize);
+                document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+                document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+                document.getElementById('btn-continue').addEventListener('click', continueToMaze);
+            } else {
+                container.appendChild(renderer.domElement);
+            }
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 50);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 22, 18);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(15, 25, 15);
+            dirLight.castShadow = true; dirLight.shadow.mapSize.set(2048,2048);
+            scene.add(dirLight);
+
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(80,80), new THREE.MeshLambertMaterial({color:0x3d5a3d}));
+            ground.rotation.x = -Math.PI/2; ground.position.y = -0.1; ground.receiveShadow = true;
+            scene.add(ground);
+
+            buildMaze();
+            spawnPlayer();
+            highlightNextStep();
+            animate();
+        }
+
+        function buildMaze() {
+            walls = [];
+            const wallMat = new THREE.MeshLambertMaterial({color:0x8B4513});
+            const pathMat = new THREE.MeshLambertMaterial({color:0xDEB887});
+            const startMat = new THREE.MeshLambertMaterial({color:0x2ecc71});
+            const endMat = new THREE.MeshLambertMaterial({color:0xf39c12});
+
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    const x=c*CELL_SIZE, z=r*CELL_SIZE;
+                    const isPath = currentPath.some(p => p.r===r && p.c===c);
+                    const isStart = (r===0 && c===0);
+                    const isEnd = (r===currentPath[currentPath.length-1].r && c===currentPath[currentPath.length-1].c);
+
+                    const mat = isStart ? startMat : isEnd ? endMat : pathMat;
+                    const path = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-0.2, 0.3, CELL_SIZE-0.2), mat);
+                    path.position.set(x, 0.15, z); path.receiveShadow = true;
+                    scene.add(path);
+
+                    if(!isPath) {
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, CELL_SIZE), wallMat);
+                        wall.position.set(x, WALL_HEIGHT/2, z); wall.castShadow = true; wall.receiveShadow = true;
+                        scene.add(wall);
+                        walls.push({x, z});
+                    }
+                }
+            }
+        }
+
+        function spawnPlayer() {
+            if(player) scene.remove(player);
+            player = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.9,1.4,0.9), new THREE.MeshLambertMaterial({color:0x667eea}));
+            body.position.y=0.7; body.castShadow=true; player.add(body);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.45,16,16), new THREE.MeshLambertMaterial({color:0xffccaa}));
+            head.position.y=1.65; head.castShadow=true; player.add(head);
+            const hatColors = [0xe74c3c, 0x2ecc71, 0x3498db, 0xf39c12, 0x9b59b6];
+            const hat = new THREE.Mesh(new THREE.ConeGeometry(0.35,0.5,16), new THREE.MeshLambertMaterial({color: hatColors[attempts%hatColors.length]}));
+            hat.position.y=2.15; hat.castShadow=true; player.add(hat);
+
+            const start = currentPath[0];
+            player.position.set(start.c*CELL_SIZE, 0, start.r*CELL_SIZE);
+            player.scale.set(0,0,0);
+            scene.add(player);
+            let s=0;
+            function popIn() { s+=0.08; const sc=Math.min(1,s); player.scale.set(sc,sc,sc); if(sc<1) requestAnimationFrame(popIn); }
+            popIn();
+        }
+
+        function highlightNextStep() {
+            if(currentStep >= currentPath.length-1) return;
+            if(nextMarker) scene.remove(nextMarker);
+            const next = currentPath[currentStep+1];
+            const x=next.c*CELL_SIZE, z=next.r*CELL_SIZE;
+            const marker = new THREE.Mesh(new THREE.RingGeometry(0.7,1.1,32), new THREE.MeshBasicMaterial({color:0x3498db, side:THREE.DoubleSide, transparent:true, opacity:0.8}));
+            marker.rotation.x = -Math.PI/2; marker.position.set(x,0.3,z);
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(0.9,12,12), new THREE.MeshBasicMaterial({color:0x3498db, transparent:true, opacity:0.2}));
+            glow.position.set(x,0.8,z);
+            scene.add(marker); scene.add(glow);
+            nextMarker = marker; nextMarker.glow = glow;
+        }
+
+        function checkCollision(nx, nz) {
+            for(let w of walls) {
+                if(nx+PLAYER_RADIUS > w.x-1.8 && nx-PLAYER_RADIUS < w.x+1.8 && nz+PLAYER_RADIUS > w.z-1.8 && nz-PLAYER_RADIUS < w.z+1.8) return true;
+            }
+            return false;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(!isModalOpen && player) {
+                const ox=player.position.x, oz=player.position.z;
+                if(keys['arrowup']||keys['w']) player.position.z -= PLAYER_SPEED;
+                if(keys['arrowdown']||keys['s']) player.position.z += PLAYER_SPEED;
+                if(keys['arrowleft']||keys['a']) player.position.x -= PLAYER_SPEED;
+                if(keys['arrowright']||keys['d']) player.position.x += PLAYER_SPEED;
+                if(checkCollision(player.position.x, oz)) player.position.x = ox;
+                if(checkCollision(ox, player.position.z)) player.position.z = oz;
+                
+                if(nextMarker) document.getElementById('question-btn').classList.toggle('show', player.position.distanceTo(nextMarker.position) < 2.2);
+            }
+            if(nextMarker) { nextMarker.rotation.z+=0.03; nextMarker.glow.scale.setScalar(1+Math.sin(Date.now()*0.004)*0.25); }
+            
+            const target = player ? player.position.clone().add(new THREE.Vector3(0,18,14)) : new THREE.Vector3(0,22,18);
+            camera.position.lerp(target, 0.06);
+            camera.lookAt(player ? player.position : new THREE.Vector3(0,0,0));
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ===== نظام الأسئلة =====
+        function openQuestionModal() {
+            if(!nextMarker || isModalOpen || (player && player.position.distanceTo(nextMarker.position) > 2.5)) return;
+            const q = questions[currentStep];
+            document.getElementById('modal-q').textContent = q.q;
+            const optsDiv = document.getElementById('modal-opts'); optsDiv.innerHTML = '';
+            q.opts.forEach((opt,i) => {
+                const btn = document.createElement('button'); btn.className='q-opt'; btn.textContent=opt;
+                btn.onclick = () => handleAnswer(i+1, q.corr, btn); optsDiv.appendChild(btn);
+            });
+            document.getElementById('modal-res').className = 'result-msg';
+            document.getElementById('btn-continue').classList.remove('show');
+            document.getElementById('question-modal').classList.add('active');
+            isModalOpen = true;
+            document.getElementById('question-btn').classList.remove('show');
+        }
+
+        function handleAnswer(sel, corr, btn) {
+            document.querySelectorAll('.q-opt').forEach(b => b.disabled = true);
+            const res = document.getElementById('modal-res');
+            const cont = document.getElementById('btn-continue');
+            if(sel === corr) {
+                btn.classList.add('correct'); res.innerHTML='✅ إجابة صحيحة!'; res.className='result-msg show success';
+                if(gameConfig.enableScore) { score+=15; document.getElementById('score').textContent=score; }
+                cont.textContent='🎮 تحرك للخطوة التالية'; cont.classList.add('show'); cont.onclick=continueAfterCorrect;
+            } else {
+                btn.classList.add('wrong'); document.querySelectorAll('.q-opt')[corr-1].classList.add('correct');
+                res.innerHTML='❌ خطأ! الشخصية احترقت 🔥'; res.className='result-msg show error';
+                cont.textContent='🔄 ظهور شخصية جديدة'; cont.classList.add('show'); cont.onclick=continueAfterWrong;
+            }
+        }
+
+        function continueAfterCorrect() {
+            document.getElementById('question-modal').classList.remove('active'); isModalOpen=false;
+            currentStep++; document.getElementById('step').textContent=currentStep;
+            const next = currentPath[currentStep]; player.position.set(next.c*CELL_SIZE, 0, next.r*CELL_SIZE);
+            if(currentStep >= currentPath.length-1) winGame(); else highlightNextStep();
+        }
+
+        function continueAfterWrong() {
+            document.getElementById('question-modal').classList.remove('active'); isModalOpen=false;
+            triggerBurnReset();
+        }
+
+        function triggerBurnReset() {
+            const scorch = new THREE.Mesh(new THREE.CircleGeometry(1.3+Math.random()*0.4,24), new THREE.MeshBasicMaterial({color:0x1a1a1a, transparent:true, opacity:0, side:THREE.DoubleSide}));
+            scorch.rotation.x=-Math.PI/2; scorch.position.copy(player.position); scorch.position.y=0.32;
+            scene.add(scorch); scorchMarks.push(scorch);
+            const fire = new THREE.Mesh(new THREE.SphereGeometry(1.8,16,16), new THREE.MeshBasicMaterial({color:0xff5722, transparent:true, opacity:0.9}));
+            fire.position.copy(player.position); fire.position.y=1.1; scene.add(fire);
+            const start = Date.now();
+            function animFire() {
+                const t = Date.now()-start;
+                fire.scale.setScalar(1+t/120); fire.material.opacity=0.9-t/700; scorch.material.opacity=Math.min(0.85, t/250);
+                if(t<700) requestAnimationFrame(animFire);
+                else {
+                    scene.remove(fire); attempts++;
+                    spawnPlayer(); currentStep=0; document.getElementById('step').textContent=0;
+                    if(gameConfig.enableScore) { score=Math.max(0, score-10); document.getElementById('score').textContent=score; }
+                    highlightNextStep();
+                }
+            } animFire();
+        }
+
+        function winGame() {
+            clearInterval(timerInterval);
+            setTimeout(() => { 
+                alert(`🏆 مبروك! أنهيت المتاهة!\n✅ النقاط: ${score}\n⏱️ الوقت: ${document.getElementById('timer').textContent}\n🔥 المحاولات: ${attempts}`); 
+                backToSetup(); 
+            }, 400);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => { seconds++; document.getElementById('timer').textContent = `${Math.floor(seconds/60).toString().padStart(2,'0')}:${(seconds%60).toString().padStart(2,'0')}`; }, 1000);
+        }
+        function continueToMaze() { if(currentStep >= currentPath.length-1) winGame(); }
+    </script>
+</body>
+</html>

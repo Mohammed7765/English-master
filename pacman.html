@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linguistic Pacman - English Master</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        :root { --primary: #667eea; --secondary: #764ba2; --success: #2ecc71; --error: #e74c3c; --warning: #f39c12; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #0a0a1a; min-height: 100vh; overflow: hidden; }
+
+        #setup-screen {
+            position: absolute; inset: 0; z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        .setup-panel {
+            background: white; width: 90%; max-width: 700px; max-height: 92vh;
+            border-radius: 20px; padding: 25px; overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .setup-header { text-align: center; margin-bottom: 20px; }
+        .setup-header h1 { color: var(--primary); font-size: 1.8rem; }
+        .setup-header p { color: #666; font-size: 0.95rem; }
+
+        .full-row { margin-bottom: 15px; }
+        input, select {
+            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 0.95rem; transition: 0.2s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        
+        .btn {
+            padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer;
+            font-weight: 600; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+
+        .q-list { max-height: 140px; overflow-y: auto; margin: 15px 0; border: 1px solid #eee; border-radius: 8px; padding: 5px; background: #fafafa; }
+        .q-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem;
+            background: white; border-radius: 6px; margin-bottom: 4px;
+        }
+        .q-item strong { color: var(--primary); margin-right: 5px; }
+        .q-actions { display: flex; gap: 5px; }
+
+        .controls-panel {
+            background: #f8f9fa; border-radius: 12px; padding: 15px; margin: 15px 0;
+            border: 2px solid #e0e0e0;
+        }
+        .controls-panel h3 { color: #333; margin-bottom: 15px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+        .ctrl-row {
+            display: grid; grid-template-columns: 140px 1fr 50px; align-items: center;
+            gap: 12px; margin-bottom: 12px;
+        }
+        .ctrl-row label { font-weight: 600; font-size: 0.9rem; color: #444; }
+        .ctrl-row input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+        .ctrl-val { text-align: center; font-weight: bold; color: var(--primary); background: white; padding: 4px; border-radius: 6px; border: 1px solid #ddd; }
+        
+        .dist-select { grid-column: 2 / 4; padding: 8px; }
+
+        .file-btn { position: relative; overflow: hidden; }
+        .file-btn input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+
+        .start-btn { width: 100%; padding: 14px; font-size: 1.1rem; margin-top: 10px; border-radius: 12px; }
+
+        #game-screen { display: none; position: relative; width: 100%; height: 100vh; }
+        #game-canvas-container { position: absolute; inset: 0; z-index: 1; }
+        #game-canvas-container canvas { width: 100% !important; height: 100% !important; }
+        
+        .hud {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 10;
+            background: rgba(0,0,0,0.85); color: white; padding: 10px 20px; border-radius: 20px;
+            display: flex; gap: 15px; font-weight: bold; font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .hud span { color: var(--warning); }
+
+        .word-display {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10;
+            background: rgba(0,0,0,0.85); color: white; padding: 12px 30px; border-radius: 15px;
+            font-size: 1.5rem; letter-spacing: 10px; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .word-display .collected { color: var(--success); font-weight: bold; }
+        .word-display .missing { color: #555; border-bottom: 3px solid #555; margin: 0 3px; }
+
+        .back-btn {
+            position: absolute; top: 15px; right: 15px; z-index: 10;
+            color: white; background: rgba(255,255,255,0.15); padding: 8px 15px;
+            border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.25); }
+
+        .instructions {
+            position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); z-index: 10;
+            background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7); padding: 8px 20px;
+            border-radius: 8px; font-size: 0.85rem;
+        }
+
+        #result-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+        #result-modal.active { display: flex; }
+        .result-content {
+            background: white; padding: 30px; border-radius: 20px; max-width: 420px; width: 90%;
+            text-align: center; animation: modalIn 0.3s;
+        }
+        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .result-content h2 { font-size: 2rem; margin-bottom: 10px; }
+        .result-content .stats { margin: 15px 0; font-size: 1.05rem; color: #555; text-align: left; line-height: 2; }
+        .result-content .stats span { color: var(--primary); font-weight: bold; }
+
+        @media (max-width: 600px) { 
+            .ctrl-row { grid-template-columns: 1fr; gap: 5px; } 
+            .hud { font-size: 0.75rem; gap: 8px; padding: 8px 12px; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <div class="setup-panel">
+            <div class="setup-header">
+                <h1>👻 Linguistic Pacman | English Master</h1>
+                <p>Collect letters in correct order | Avoid ghosts | Wrong letter = instant life loss</p>
+            </div>
+
+            <div class="full-row">
+                <label style="font-weight:bold; color:#555; display:block; margin-bottom:5px;">Word (in English):</label>
+                <input type="text" id="wordInput" placeholder="Example: SCHOOL" dir="ltr" style="text-transform: uppercase; font-weight: bold; letter-spacing: 2px;">
+            </div>
+
+            <div class="q-list" id="wordList">
+                <p style="text-align:center; color:#888; padding:20px;">No words yet. Add a word!</p>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="addWord()">➕ Add</button>
+                <button class="btn btn-secondary" onclick="loadExamples()">📚 Load Examples</button>
+            </div>
+
+            <div class="controls-panel">
+                <h3>⚙️ Game Settings</h3>
+                
+                <div class="ctrl-row">
+                    <label>❤️ Number of Lives:</label>
+                    <input type="range" id="livesSlider" min="1" max="10" value="3" oninput="document.getElementById('livesVal').textContent=this.value">
+                    <div class="ctrl-val" id="livesVal">3</div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>👥 Number of Ghosts:</label>
+                    <input type="range" id="ghostCountSlider" min="1" max="4" value="3" oninput="document.getElementById('ghostVal').textContent=this.value">
+                    <div class="ctrl-val" id="ghostVal">3</div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>🏃 Player Speed:</label>
+                    <input type="range" id="playerSpeedSlider" min="80" max="250" value="140" step="10" oninput="document.getElementById('pSpeedVal').textContent=this.value + 'ms'">
+                    <div class="ctrl-val" id="pSpeedVal">140ms</div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>👻 Ghost Speed:</label>
+                    <input type="range" id="ghostSpeedSlider" min="180" max="500" value="300" step="10" oninput="document.getElementById('gSpeedVal').textContent=this.value + 'ms'">
+                    <div class="ctrl-val" id="gSpeedVal">300ms</div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>🔤 Letter Distribution:</label>
+                    <select id="letterDistMode" class="dist-select">
+                        <option value="random">🎲 Random</option>
+                        <option value="path">🛤️ Sequential</option>
+                        <option value="cluster">🎯 Clustered</option>
+                    </select>
+                </div>
+                
+                <div class="ctrl-row">
+                    <label>🛡️ Protection Period (seconds):</label>
+                    <input type="range" id="invincibleTime" min="0" max="2" value="0.5" step="0.1" oninput="document.getElementById('invVal').textContent=this.value + 's'">
+                    <div class="ctrl-val" id="invVal">0.5s</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn btn-secondary" onclick="exportWords()">📥 Export</button>
+                <button class="btn btn-secondary file-btn">📤 Import <input type="file" accept=".json" onchange="importWords(event)"></button>
+            </div>
+
+            <button class="btn btn-success start-btn" id="startBtn" disabled onclick="startGame()">🎮 Start Game</button>
+        </div>
+    </div>
+
+    <div id="game-screen">
+        <div class="back-btn" onclick="backToSetup()">🔙 Setup</div>
+        <div class="hud">
+            <div>⭐ Score: <span id="score">0</span></div>
+            <div>📖 Word: <span id="wordNum">1</span>/<span id="totalWords">0</span></div>
+            <div>❤️ <span id="lives">3</span></div>
+        </div>
+        <div class="word-display" id="wordDisplay"></div>
+        <div class="instructions">🎮 Arrow keys/WASD to move | Collect letters in order | Wrong letter = -1 life | Ghost = -1 life</div>
+        <div id="game-canvas-container"></div>
+    </div>
+
+    <div id="result-modal">
+        <div class="result-content">
+            <h2 id="resultTitle">🎉</h2>
+            <div class="stats" id="resultStats"></div>
+            <button class="btn btn-primary" onclick="backToSetup()" style="width:100%; padding:12px; margin-top:10px;">🔄 Back to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        let words = [], currentWordIndex = 0, score = 0, lives = 3;
+        let editIndex = -1;
+        let gameConfig = { lives: 3, ghostCount: 3, playerDelay: 140, ghostDelay: 300, letterDist: 'random', invincibleTime: 0.5 };
+        let game = null;
+
+        // ===== Audio System =====
+        const AudioSys = {
+            ctx: null,
+            
+            init() {
+                if(!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+
+            playEatLetter() {
+                this.init();
+                const o = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                o.connect(g); g.connect(this.ctx.destination);
+                o.type = 'sine';
+                o.frequency.setValueAtTime(880, this.ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.08);
+                g.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                o.start(); o.stop(this.ctx.currentTime + 0.15);
+            },
+
+            playWrongLetter() {
+                this.init();
+                const o = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                o.connect(g); g.connect(this.ctx.destination);
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(200, this.ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.25);
+                g.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                o.start(); o.stop(this.ctx.currentTime + 0.25);
+            },
+
+            playHitGhost() {
+                this.init();
+                const o1 = this.ctx.createOscillator();
+                const g1 = this.ctx.createGain();
+                o1.connect(g1); g1.connect(this.ctx.destination);
+                o1.type = 'square';
+                o1.frequency.setValueAtTime(300, this.ctx.currentTime);
+                o1.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+                g1.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                g1.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                o1.start(); o1.stop(this.ctx.currentTime + 0.3);
+                
+                const o2 = this.ctx.createOscillator();
+                const g2 = this.ctx.createGain();
+                o2.connect(g2); g2.connect(this.ctx.destination);
+                o2.type = 'sawtooth';
+                o2.frequency.setValueAtTime(150, this.ctx.currentTime + 0.1);
+                o2.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.4);
+                g2.gain.setValueAtTime(0.15, this.ctx.currentTime + 0.1);
+                g2.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                o2.start(this.ctx.currentTime + 0.1); o2.stop(this.ctx.currentTime + 0.4);
+            },
+
+            playWordComplete() {
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const o = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    o.connect(g); g.connect(this.ctx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.12);
+                    g.gain.setValueAtTime(0.2, this.ctx.currentTime + i * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.12 + 0.25);
+                    o.start(this.ctx.currentTime + i * 0.12);
+                    o.stop(this.ctx.currentTime + i * 0.12 + 0.25);
+                });
+            },
+
+            playWin() {
+                this.init();
+                const melody = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50, 1318.51];
+                melody.forEach((freq, i) => {
+                    const o = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    o.connect(g); g.connect(this.ctx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.15);
+                    g.gain.setValueAtTime(0.25, this.ctx.currentTime + i * 0.15);
+                    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.15 + 0.3);
+                    o.start(this.ctx.currentTime + i * 0.15);
+                    o.stop(this.ctx.currentTime + i * 0.15 + 0.3);
+                });
+            },
+
+            playLose() {
+                this.init();
+                const melody = [400, 350, 300, 250, 200];
+                melody.forEach((freq, i) => {
+                    const o = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    o.connect(g); g.connect(this.ctx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.2);
+                    g.gain.setValueAtTime(0.2, this.ctx.currentTime + i * 0.2);
+                    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.2 + 0.3);
+                    o.start(this.ctx.currentTime + i * 0.2);
+                    o.stop(this.ctx.currentTime + i * 0.2 + 0.3);
+                });
+            }
+        };
+
+        function updateWordList() {
+            const list = document.getElementById('wordList');
+            if(words.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">No words yet. Add a word!</p>';
+                document.getElementById('startBtn').disabled = true;
+                return;
+            }
+            list.innerHTML = words.map((w,i) => `
+                <div class="q-item">
+                    <div><strong>${i+1}.</strong> <span style="font-size:1.2rem; letter-spacing:3px;">${w}</span></div>
+                    <div class="q-actions">
+                        <button class="btn btn-warning" style="padding:4px 8px; font-size:0.8rem;" onclick="editWord(${i})">✏️</button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="removeWord(${i})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('startBtn').disabled = words.length < 1;
+        }
+
+        function addWord() {
+            const word = document.getElementById('wordInput').value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+            if(!word || word.length < 3 || word.length > 8) return alert('⚠️ Word must be 3-8 letters!');
+            if(editIndex !== -1) { words[editIndex] = word; editIndex = -1; }
+            else words.push(word);
+            document.getElementById('wordInput').value = '';
+            updateWordList();
+        }
+
+        function editWord(index) {
+            editIndex = index;
+            document.getElementById('wordInput').value = words[index];
+        }
+
+        function removeWord(i) {
+            if(confirm('Delete this word?')) {
+                words.splice(i, 1);
+                if(editIndex === i) { editIndex = -1; document.getElementById('wordInput').value = ''; }
+                updateWordList();
+            }
+        }
+
+        function loadExamples() {
+            words = ['SCHOOL', 'TEACHER', 'STUDENT', 'ENGLISH', 'LEARNING'];
+            editIndex = -1; document.getElementById('wordInput').value = '';
+            updateWordList();
+        }
+
+        function exportWords() {
+            if(!words.length) return alert('Add words first!');
+            const blob = new Blob([JSON.stringify(words, null, 2)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = 'pacman-words.json'; a.click();
+        }
+
+        function importWords(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    words = data.map(w => String(w).toUpperCase().replace(/[^A-Z]/g, '')).filter(w => w.length >= 3 && w.length <= 8);
+                    editIndex = -1; document.getElementById('wordInput').value = '';
+                    updateWordList();
+                    alert(`✅ Successfully imported ${words.length} words!`);
+                } catch(err) { alert('❌ Error: ' + err.message); }
+            };
+            reader.readAsText(file);
+        }
+
+        function startGame() {
+            if(!words.length) return alert('Add at least one word!');
+            
+            gameConfig.lives = parseInt(document.getElementById('livesSlider').value);
+            gameConfig.ghostCount = parseInt(document.getElementById('ghostCountSlider').value);
+            gameConfig.playerDelay = parseInt(document.getElementById('playerSpeedSlider').value);
+            gameConfig.ghostDelay = parseInt(document.getElementById('ghostSpeedSlider').value);
+            gameConfig.letterDist = document.getElementById('letterDistMode').value;
+            gameConfig.invincibleTime = parseFloat(document.getElementById('invincibleTime').value);
+
+            currentWordIndex = 0; 
+            score = 0; 
+            lives = gameConfig.lives;
+            
+            document.getElementById('totalWords').textContent = words.length;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('wordNum').textContent = '1';
+            document.getElementById('result-modal').classList.remove('active');
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+
+            updateWordDisplay(words[0], 0);
+
+            AudioSys.init();
+
+            if(game) { game.destroy(true); game = null; }
+            
+            game = new Phaser.Game({
+                type: Phaser.AUTO,
+                width: 800,
+                height: 600,
+                parent: 'game-canvas-container',
+                backgroundColor: '#0a0a2e',
+                scene: GameScene,
+                scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
+            });
+
+            setTimeout(() => {
+                const scene = game.scene.getScene('GameScene');
+                if(scene) scene.startWord(words[0]);
+            }, 500);
+        }
+
+        function updateWordDisplay(word, count) {
+            let html = '';
+            for(let i=0; i<word.length; i++) {
+                html += i < count ? `<span class="collected">${word[i]}</span> ` : `<span class="missing">_</span> `;
+            }
+            document.getElementById('wordDisplay').innerHTML = html;
+        }
+
+        function backToSetup() {
+            if(game) { game.destroy(true); game = null; }
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'flex';
+            document.getElementById('result-modal').classList.remove('active');
+        }
+
+        function showResult(won) {
+            if(won) AudioSys.playWin();
+            else AudioSys.playLose();
+            
+            document.getElementById('resultTitle').textContent = won ? '🎉 Well Done! 🎉' : '💀 Game Over! 💀';
+            document.getElementById('resultStats').innerHTML = `
+                <p>📊 Final Score: <span>${score}</span></p>
+                <p>📝 Words Completed: <span>${currentWordIndex}/${words.length}</span></p>
+            `;
+            document.getElementById('result-modal').classList.add('active');
+        }
+
+        // Function to deduct life with effects
+        function reduceLife(scene, isGhost) {
+            if(lives <= 0) return;
+            
+            lives--;
+            document.getElementById('lives').textContent = lives;
+            scene.cameras.main.shake(200, 0.01);
+            
+            if(isGhost) AudioSys.playHitGhost();
+            
+            // Flash effect
+            scene.tweens.add({
+                targets: scene.player, 
+                alpha: 0, 
+                duration: 100, 
+                yoyo: true, 
+                repeat: 3,
+                onComplete: () => { scene.player.alpha = 1; }
+            });
+            
+            if(lives <= 0) { 
+                scene.isPaused = true; 
+                showResult(false); 
+            }
+        }
+
+        const GameScene = new Phaser.Class({
+            Extends: Phaser.Scene,
+            initialize: function() { Phaser.Scene.call(this, { key: 'GameScene' }); },
+            
+            preload: function() {},
+            
+            create: function() { this.isReady = false; },
+
+            startWord: function(word) {
+                if(!this.isReady) this.initGame();
+                this.loadNewWord(word);
+            },
+
+            initGame: function() {
+                this.isReady = true;
+                this.MAP = [
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+                    [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1],
+                    [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1],
+                    [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,0,1],
+                    [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+                    [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1],
+                    [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ];
+
+                this.CELL = 40;
+                this.GRID_W = this.MAP[0].length;
+                this.GRID_H = this.MAP.length;
+                this.ghosts = [];
+                this.letters = [];
+                this.isPaused = false;
+                this.invincibleUntil = 0; // Protection end time
+
+                this.buildMaze();
+                this.createTextures();
+
+                this.player = this.add.sprite(40, 40, 'pacman').setScale(0.7).setDepth(10);
+                this.player.gridX = 1; this.player.gridY = 1;
+                this.player.dirX = 0; this.player.dirY = 0;
+                this.player.nextDirX = 0; this.player.nextDirY = 0;
+                this.player.moveTimer = 0;
+
+                this.createGhosts();
+
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.wasd = this.input.keyboard.addKeys('W,A,S,D');
+            },
+
+            buildMaze: function() {
+                for(let r=0; r<this.GRID_H; r++) {
+                    for(let c=0; c<this.GRID_W; c++) {
+                        if(this.MAP[r][c] === 1) {
+                            this.add.rectangle(c*this.CELL+20, r*this.CELL+20, this.CELL, this.CELL, 0x1a237e).setDepth(1);
+                            this.add.rectangle(c*this.CELL+20, r*this.CELL+20, this.CELL-2, this.CELL-2, null).setStrokeStyle(2, 0x3949ab).setDepth(2);
+                        }
+                    }
+                }
+            },
+
+            createTextures: function() {
+                let g = this.make.graphics({add:false});
+                g.fillStyle(0xffdd00);
+                g.beginPath(); g.arc(20,20,18,0.3,Math.PI*2-0.3,false); g.lineTo(20,20); g.closePath(); g.fillPath();
+                g.fillStyle(0x000000); g.fillCircle(15,14,3);
+                g.generateTexture('pacman', 40, 40); g.destroy();
+
+                [0xff0040, 0x00ffff, 0xff69b4, 0xff9900].forEach((color, i) => {
+                    g = this.make.graphics({add:false});
+                    g.fillStyle(color);
+                    g.beginPath(); g.arc(20,16,16,Math.PI,0,false);
+                    g.lineTo(36,32); g.lineTo(32,28); g.lineTo(26,32);
+                    g.lineTo(20,28); g.lineTo(14,32); g.lineTo(8,28); g.lineTo(4,32);
+                    g.closePath(); g.fillPath();
+                    g.fillStyle(0xffffff); g.fillCircle(13,14,5); g.fillCircle(27,14,5);
+                    g.fillStyle(0x000066); g.fillCircle(14,14,3); g.fillCircle(28,14,3);
+                    g.generateTexture('ghost'+i, 40, 40); g.destroy();
+                });
+
+                g = this.make.graphics({add:false});
+                g.fillStyle(0x00ff88); g.fillCircle(10,10,10);
+                g.fillStyle(0x00cc66); g.fillCircle(10,10,6);
+                g.generateTexture('dot', 20, 20); g.destroy();
+            },
+
+            createGhosts: function() {
+                const positions = [{x:9,y:5}, {x:10,y:5}, {x:9,y:6}, {x:10,y:6}];
+                const count = Math.min(gameConfig.ghostCount, positions.length);
+                this.ghosts = [];
+                for(let i=0; i<count; i++) {
+                    const pos = positions[i];
+                    const ghost = this.add.sprite(pos.x*this.CELL+20, pos.y*this.CELL+20, 'ghost'+ (i % 4)).setScale(0.7).setDepth(8);
+                    ghost.gridX = pos.x; ghost.gridY = pos.y;
+                    ghost.targetX = pos.x; ghost.targetY = pos.y;
+                    ghost.moveTimer = i * 150;
+                    ghost.isMoving = false;
+                    this.ghosts.push(ghost);
+                }
+            },
+
+            loadNewWord: function(word) {
+                this.currentWord = word;
+                this.collectedCount = 0;
+                this.isPaused = false;
+
+                this.ghosts.forEach(ghost => {
+                    this.tweens.killTweensOf(ghost);
+                    ghost.destroy();
+                });
+                this.ghosts = [];
+
+                this.letters.forEach(l => { l.sprite.destroy(); l.text.destroy(); l.glow.destroy(); });
+                this.letters = [];
+
+                const spots = [];
+                for(let r=0; r<this.GRID_H; r++) {
+                    for(let c=0; c<this.GRID_W; c++) {
+                        if(this.MAP[r][c] === 0 && !(r<=1 && c<=1)) spots.push({r, c});
+                    }
+                }
+
+                if(gameConfig.letterDist === 'path') {
+                    spots.sort((a, b) => (a.r - b.r) || (a.c - b.c));
+                } else if(gameConfig.letterDist === 'cluster') {
+                    const midR = Math.floor(this.GRID_H/2), midC = Math.floor(this.GRID_W/2);
+                    spots.sort((a, b) => {
+                        const da = Math.abs(a.r-midR) + Math.abs(a.c-midC);
+                        const db = Math.abs(b.r-midR) + Math.abs(b.c-midC);
+                        return da - db;
+                    });
+                } else {
+                    spots.sort(() => Math.random() - 0.5);
+                }
+
+                for(let i=0; i<word.length && i<spots.length; i++) {
+                    const s = spots[i];
+                    const x = s.c*this.CELL+20, y = s.r*this.CELL+20;
+                    const glow = this.add.circle(x, y, 15, 0x00ff88, 0.3).setDepth(3);
+                    const sprite = this.add.sprite(x, y, 'dot').setDepth(5);
+                    const text = this.add.text(x, y, word[i], {fontSize:'18px', color:'#fff', fontStyle:'bold'}).setOrigin(0.5).setDepth(6);
+                    this.letters.push({letter:word[i], gridX:s.c, gridY:s.r, sprite, text, glow, collected:false});
+                }
+
+                this.player.x = 20; this.player.y = 20;
+                this.player.gridX = 1; this.player.gridY = 1;
+                this.player.dirX = 0; this.player.dirY = 0;
+                this.player.nextDirX = 0; this.player.nextDirY = 0;
+                this.player.moveTimer = 0;
+                this.player.alpha = 1;
+                this.invincibleUntil = 0;
+
+                this.createGhosts();
+                updateWordDisplay(word, 0);
+            },
+
+            canMove: function(gx, gy) {
+                return gx>=0 && gx<this.GRID_W && gy>=0 && gy<this.GRID_H && this.MAP[gy][gx]===0;
+            },
+
+            update: function(time, delta) {
+                if(this.isPaused || !this.isReady) return;
+
+                if(this.cursors.left.isDown||this.wasd.A.isDown) { this.player.nextDirX=-1; this.player.nextDirY=0; }
+                else if(this.cursors.right.isDown||this.wasd.D.isDown) { this.player.nextDirX=1; this.player.nextDirY=0; }
+                else if(this.cursors.up.isDown||this.wasd.W.isDown) { this.player.nextDirX=0; this.player.nextDirY=-1; }
+                else if(this.cursors.down.isDown||this.wasd.S.isDown) { this.player.nextDirX=0; this.player.nextDirY=1; }
+
+                this.player.moveTimer -= delta;
+                if(this.player.moveTimer <= 0) {
+                    this.player.moveTimer = gameConfig.playerDelay;
+                    let moved = false;
+                    const nx = this.player.gridX+this.player.nextDirX, ny = this.player.gridY+this.player.nextDirY;
+                    if(this.canMove(nx,ny) && (this.player.nextDirX||this.player.nextDirY)) {
+                        this.player.gridX=nx; this.player.gridY=ny;
+                        this.player.dirX=this.player.nextDirX; this.player.dirY=this.player.nextDirY;
+                        moved=true;
+                    }
+                    if(!moved) {
+                        const cx=this.player.gridX+this.player.dirX, cy=this.player.gridY+this.player.dirY;
+                        if(this.canMove(cx,cy)) { this.player.gridX=cx; this.player.gridY=cy; }
+                    }
+                    
+                    this.tweens.add({
+                        targets: this.player, 
+                        x: this.player.gridX*this.CELL+20, 
+                        y: this.player.gridY*this.CELL+20, 
+                        duration: 100, 
+                        ease: 'Linear',
+                        onComplete: () => {
+                            this.player.x = this.player.gridX*this.CELL+20;
+                            this.player.y = this.player.gridY*this.CELL+20;
+                        }
+                    });
+
+                    if(this.player.dirX===1) this.player.angle=0;
+                    else if(this.player.dirX===-1) this.player.angle=180;
+                    else if(this.player.dirY===-1) this.player.angle=-90;
+                    else if(this.player.dirY===1) this.player.angle=90;
+
+                    this.checkCollection(time);
+                }
+
+                this.ghosts.forEach(ghost => {
+                    ghost.moveTimer -= delta;
+                    if(ghost.moveTimer <= 0 && !ghost.isMoving) {
+                        ghost.moveTimer = gameConfig.ghostDelay;
+                        this.moveGhost(ghost);
+                    }
+                });
+
+                this.checkCollisions(time);
+            },
+
+            moveGhost: function(ghost) {
+                const dirs = [{x:0,y:-1},{x:0,y:1},{x:-1,y:0},{x:1,y:0}];
+                const valid = dirs.filter(d => this.canMove(ghost.gridX+d.x, ghost.gridY+d.y));
+                if(!valid.length) return;
+
+                let best = valid[Math.floor(Math.random()*valid.length)];
+                if(Math.random() < 0.6) {
+                    const dx = this.player.gridX-ghost.gridX, dy = this.player.gridY-ghost.gridY;
+                    const chase = valid.find(d => (d.x&&Math.sign(d.x)===Math.sign(dx))||(d.y&&Math.sign(d.y)===Math.sign(dy)));
+                    if(chase) best = chase;
+                }
+
+                ghost.targetX = ghost.gridX + best.x;
+                ghost.targetY = ghost.gridY + best.y;
+                ghost.isMoving = true;
+                
+                this.tweens.killTweensOf(ghost);
+                
+                this.tweens.add({
+                    targets: ghost,
+                    x: ghost.targetX*this.CELL+20,
+                    y: ghost.targetY*this.CELL+20,
+                    duration: 150,
+                    ease: 'Linear',
+                    onComplete: () => {
+                        ghost.gridX = ghost.targetX;
+                        ghost.gridY = ghost.targetY;
+                        ghost.isMoving = false;
+                        ghost.x = ghost.gridX*this.CELL+20;
+                        ghost.y = ghost.gridY*this.CELL+20;
+                    }
+                });
+            },
+
+            checkCollisions: function(time) {
+                // Check protection
+                const isInvincible = time < this.invincibleUntil;
+                
+                this.ghosts.forEach(ghost => {
+                    if(ghost.gridX === this.player.gridX && ghost.gridY === this.player.gridY) {
+                        if(lives > 0 && !isInvincible) {
+                            reduceLife(this, true);
+                            // Activate protection period
+                            this.invincibleUntil = time + (gameConfig.invincibleTime * 1000);
+                        }
+                    }
+                });
+            },
+
+            checkCollection: function(time) {
+                this.letters.forEach(l => {
+                    if(l.collected) return;
+                    if(l.gridX===this.player.gridX && l.gridY===this.player.gridY) {
+                        if(l.letter === this.currentWord[this.collectedCount]) {
+                            l.collected = true;
+                            l.sprite.destroy(); l.text.destroy(); l.glow.destroy();
+                            this.collectedCount++;
+                            score += 20;
+                            document.getElementById('score').textContent = score;
+                            updateWordDisplay(this.currentWord, this.collectedCount);
+                            
+                            AudioSys.playEatLetter();
+                            
+                            this.tweens.add({targets:this.player, scaleX:1.2, scaleY:1.2, duration:150, yoyo:true});
+                            if(this.collectedCount >= this.currentWord.length) this.wordComplete();
+                        } else {
+                            // Wrong letter - instant life loss (no protection)
+                            AudioSys.playWrongLetter();
+                            
+                            this.tweens.add({targets:this.player, alpha:0.3, duration:150, yoyo:true, repeat:2});
+                            
+                            if(lives > 0) {
+                                reduceLife(this, false);
+                                // Wrong letter doesn't give long protection (just a brief flash)
+                                // Give 0.3 seconds protection to prevent repeated hits from same letter
+                                this.invincibleUntil = time + 300;
+                            }
+                        }
+                    }
+                });
+            },
+
+            wordComplete: function() {
+                this.isPaused = true;
+                currentWordIndex++;
+                
+                AudioSys.playWordComplete();
+                
+                if(currentWordIndex >= words.length) { 
+                    showResult(true); 
+                } else {
+                    document.getElementById('wordNum').textContent = currentWordIndex+1;
+                    setTimeout(() => {
+                        this.loadNewWord(words[currentWordIndex]);
+                        this.isPaused = false;
+                    }, 2000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

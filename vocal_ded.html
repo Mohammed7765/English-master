@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Detective - English Master</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .back-link { text-align: right; margin-bottom: 15px; }
+        .back-link a {
+            color: white; text-decoration: none; font-size: 1.1rem;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px; background: rgba(255,255,255,0.2);
+            border-radius: 10px; transition: all 0.3s;
+        }
+        .back-link a:hover { background: rgba(255,255,255,0.3); }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.2rem; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1rem; }
+
+        .teacher-section {
+            background: white; border-radius: 20px; padding: 25px;
+            margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .teacher-section h2 {
+            color: #2ecc71; margin-bottom: 20px; font-size: 1.4rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sentence-input {
+            width: 100%; padding: 15px; border: 2px solid #e0e0e0;
+            border-radius: 12px; font-size: 1.1rem; margin-bottom: 10px;
+            transition: border-color 0.3s; direction: ltr;
+        }
+        .sentence-input:focus { outline: none; border-color: #2ecc71; }
+        .hint-text { color: #888; font-size: 0.9rem; margin-bottom: 10px; }
+
+        /* ===== NEW: Recording Section ===== */
+        .recording-section {
+            background: #f8f9fa; border: 2px dashed #2ecc71;
+            border-radius: 12px; padding: 15px; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+        }
+        .rec-btn {
+            padding: 10px 20px; border: none; border-radius: 25px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-record { background: #e74c3c; color: white; }
+        .btn-record:hover { background: #c0392b; }
+        .btn-record.recording { animation: pulse-red 1.5s infinite; }
+        .btn-stop { background: #34495e; color: white; }
+        .btn-stop:hover { background: #2c3e50; }
+        .btn-play-preview { background: #3498db; color: white; }
+        .btn-play-preview:hover { background: #2980b9; }
+        
+        .record-status {
+            font-size: 0.9rem; color: #555; font-weight: bold;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .recording-dot {
+            width: 12px; height: 12px; background: #e74c3c;
+            border-radius: 50%; display: none;
+        }
+        .recording-dot.active { display: block; animation: pulse-red 1s infinite; }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .word-selector {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;
+            padding: 15px; background: #f8f9fa; border-radius: 12px;
+            border: 2px dashed #e0e0e0; min-height: 60px; align-items: center;
+        }
+        .word-selector.empty { justify-content: center; color: #999; font-style: italic; }
+        .word-tag {
+            padding: 8px 16px; background: white; border: 2px solid #2ecc71;
+            border-radius: 20px; cursor: pointer; font-size: 1rem;
+            font-weight: bold; color: #2ecc71; transition: all 0.2s ease; user-select: none;
+        }
+        .word-tag:hover { background: #e8f8f0; transform: translateY(-2px); }
+        .word-tag.selected {
+            background: #e74c3c; border-color: #c0392b; color: white;
+            text-decoration: line-through; opacity: 0.8; transform: scale(0.95);
+        }
+
+        .btn {
+            padding: 12px 25px; border: none; border-radius: 10px;
+            font-size: 1rem; cursor: pointer; transition: all 0.3s; font-weight: bold;
+        }
+        .btn-primary { background: #2ecc71; color: white; }
+        .btn-primary:hover { background: #27ae60; transform: translateY(-2px); }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-success:hover { background: #27ae60; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+
+        .saved-sets-section {
+            background: #f8f9fa; border-radius: 15px; padding: 20px;
+            margin-bottom: 25px; border: 2px solid #e0e0e0;
+        }
+        .saved-sets-section h3 { color: #555; margin-bottom: 15px; font-size: 1.2rem; }
+        .save-set-form { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .save-set-form input {
+            flex: 1; min-width: 200px; padding: 10px 15px;
+            border: 2px solid #ddd; border-radius: 10px; font-size: 1rem;
+        }
+        .saved-sets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .saved-set-card {
+            background: white; border: 2px solid #e0e0e0; border-radius: 12px;
+            padding: 15px; cursor: pointer; transition: all 0.3s;
+        }
+        .saved-set-card:hover { border-color: #2ecc71; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .saved-set-card.active { border-color: #2ecc71; background: #f0fff4; }
+        .saved-set-card .set-name { font-weight: bold; color: #333; margin-bottom: 5px; }
+        .saved-set-card .set-info { color: #888; font-size: 0.85rem; }
+        .saved-set-card .set-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .set-actions button {
+            padding: 6px 12px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 0.8rem; transition: all 0.3s;
+        }
+        .btn-load { background: #2ecc71; color: white; }
+        .btn-delete-set { background: #e74c3c; color: white; }
+        .empty-sets { text-align: center; padding: 30px; color: #999; }
+
+        .transfer-section {
+            background: linear-gradient(135deg, #2ecc7115, #27ae6015);
+            border-radius: 15px; padding: 20px; margin-bottom: 25px; border: 2px dashed #2ecc71;
+        }
+        .transfer-section h3 { color: #2ecc71; margin-bottom: 15px; }
+        .transfer-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .transfer-btn {
+            padding: 12px 20px; border: none; border-radius: 10px;
+            cursor: pointer; font-size: 0.95rem; font-weight: bold;
+            transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-export { background: #2ecc71; color: white; }
+        .btn-import { background: #3498db; color: white; position: relative; overflow: hidden; }
+        .btn-import input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+        .game-section {
+            background: white; border-radius: 20px; padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none;
+        }
+        .game-section.active { display: block; }
+        .game-options {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px;
+        }
+        .option-item { display: flex; align-items: center; gap: 10px; }
+        .option-item input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #2ecc71; }
+        .option-item label { cursor: pointer; font-size: 0.95rem; color: #555; }
+        .option-item select { padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9rem; }
+        .game-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .score-board { display: flex; gap: 15px; flex-wrap: wrap; }
+        .score-item { background: #f8f9fa; padding: 10px 20px; border-radius: 10px; font-size: 1rem; }
+        .score-item span { font-weight: bold; color: #2ecc71; }
+        .timer { font-size: 1.2rem; color: #e74c3c; font-weight: bold; }
+        .progress-bar { width: 100%; height: 10px; background: #e0e0e0; border-radius: 5px; margin-bottom: 25px; overflow: hidden; }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60);
+            border-radius: 5px; transition: width 0.5s ease; width: 0%;
+        }
+        .sentence-display {
+            text-align: center; font-size: 1.6rem; color: #333; margin-bottom: 30px;
+            padding: 25px; background: #f8f9fa; border-radius: 15px; border: 2px dashed #ccc;
+            direction: ltr; font-weight: bold; letter-spacing: 1px; line-height: 1.6;
+        }
+        .word-chip {
+            padding: 12px 25px; background: white; border: 2px solid #2ecc71;
+            border-radius: 25px; cursor: pointer; font-size: 1.1rem; font-weight: bold;
+            color: #2ecc71; transition: all 0.3s; user-select: none; direction: ltr;
+        }
+        .word-chip:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); }
+        .word-chip.selected { background: #2ecc71; color: white; border-color: #27ae60; transform: scale(1.05); }
+        .word-chip.correct { background: #2ecc71; border-color: #27ae60; color: white; animation: correctPulse 0.5s ease; }
+        .word-chip.wrong { background: #e74c3c; border-color: #c0392b; color: white; animation: shake 0.5s ease; }
+        .words-pool {
+            background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 25px;
+            min-height: 80px; display: flex; flex-wrap: wrap; gap: 15px;
+            justify-content: center; border: 2px dashed #ccc;
+        }
+        .game-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .result-message { text-align: center; padding: 18px; border-radius: 15px; margin-top: 20px; font-size: 1.1rem; display: none; font-weight: bold; }
+        .result-message.show { display: block; }
+        .result-message.success { background: #e8f8f0; color: #27ae60; border: 2px solid #2ecc71; }
+        .result-message.error { background: #fdeaea; color: #c0392b; border: 2px solid #e74c3c; }
+
+        @keyframes correctPulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-10px); } 80% { transform: translateX(10px); } }
+        .confetti { position: fixed; width: 12px; height: 12px; top: -10px; animation: fall linear forwards; z-index: 9999; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+        .notification {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            padding: 15px 30px; border-radius: 10px; color: white; font-weight: bold;
+            z-index: 10000; animation: slideDown 0.3s ease;
+        }
+        .notification.success { background: #2ecc71; }
+        .notification.error { background: #e74c3c; }
+        @keyframes slideDown { from { transform: translateX(-50%) translateY(-100px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 15px; }
+        .help-text {
+            background: #e8f8f0; border-left: 4px solid #2ecc71; padding: 12px 15px;
+            border-radius: 8px; margin-bottom: 15px; color: #27ae60; font-size: 0.9rem; line-height: 1.6;
+        }
+        .sentence-preview {
+            background: #f0fff4; padding: 15px; border-radius: 10px; margin-bottom: 15px;
+            direction: ltr; font-size: 1.1rem; color: #27ae60; font-weight: bold; border: 1px solid #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-link">
+            <a href="index.html">← Back to Main Menu</a>
+        </div>
+
+        <div class="header">
+            <h1>🔍 Audio Detective</h1>
+            <p>Listen carefully and find the missing word in the sentence</p>
+        </div>
+
+        <!-- ===== Teacher Section ===== -->
+        <div class="teacher-section" id="teacherSection">
+            <h2>⚙️ Game Settings</h2>
+
+            <div class="game-options">
+                <div class="option-item">
+                    <input type="checkbox" id="enableScore" checked>
+                    <label for="enableScore">Enable Score</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="enableTimer">
+                    <label for="enableTimer">Enable Timer</label>
+                </div>
+                <div class="option-item">
+                    <label for="timerDuration">Timer Duration:</label>
+                    <select id="timerDuration">
+                        <option value="60">1 Minute</option>
+                        <option value="120">2 Minutes</option>
+                        <option value="180">3 Minutes</option>
+                        <option value="300">5 Minutes</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="showFeedback" checked>
+                    <label for="showFeedback">Show Instant Feedback</label>
+                </div>
+            </div>
+
+            <div class="transfer-section">
+                <h3>💾 Transfer Sets (Export / Import)</h3>
+                <div class="help-text">
+                    📌 <strong>How to use:</strong><br>
+                    1. Prepare sentences at home ← Save them ← Click <strong>"📥 Export All"</strong><br>
+                    2. Transfer the file to school<br>
+                    3. At school ← Click <strong>"📤 Import"</strong> ← Choose the file ← Ready!
+                </div>
+                <div class="transfer-buttons">
+                    <button class="transfer-btn btn-export" onclick="exportAllSets()">📥 Export All as File</button>
+                    <button class="transfer-btn btn-import">
+                        📤 Import from File
+                        <input type="file" accept=".json" onchange="importSetsFromFile(event)">
+                    </button>
+                </div>
+            </div>
+
+            <div class="saved-sets-section">
+                <h3>📂 Saved Sets on This Device</h3>
+                <div class="save-set-form">
+                    <input type="text" id="setNameInput" placeholder="Set name (e.g., Unit 1 - Listening)">
+                    <button class="btn btn-success" onclick="saveCurrentSet()">💾 Save on Device</button>
+                </div>
+                <div class="saved-sets-grid" id="savedSetsList">
+                    <div class="empty-sets">
+                        <div class="icon">📂</div>
+                        <p>No saved sets. Add sentences and save them!</p>
+                    </div>
+                </div>
+            </div>
+
+            <h2>📝 Add Sentence</h2>
+            <p class="hint-text">Write the full sentence, then <strong>click on the word</strong> you want to hide. You can also record your own voice!</p>
+
+            <input type="text" class="sentence-input" id="sentenceInput" placeholder="Write the sentence here... (e.g., The cat is sleeping on the sofa)" dir="ltr">
+            
+            <!-- NEW: Recording Section -->
+            <div class="recording-section" id="recordingSection">
+                <button class="rec-btn btn-record" id="btnRecord" onclick="startRecording()">🎤 Record</button>
+                <button class="rec-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>⏹️ Stop</button>
+                <button class="rec-btn btn-play-preview" id="btnPlayPreview" onclick="playPreview()" disabled>▶️ Play Preview</button>
+                <div class="record-status">
+                    <div class="recording-dot" id="recordingDot"></div>
+                    <span id="recordStatusText">No audio recorded (Will use Text-to-Speech)</span>
+                </div>
+            </div>
+
+            <div class="word-selector empty" id="wordSelector">
+                Type a sentence above to select the hidden word...
+            </div>
+
+            <div class="sentence-preview" id="sentencePreview" style="display: none;">
+                Student will see: <span id="previewText"></span>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="addSentence()">➕ Add Sentence</button>
+                <button class="btn btn-secondary" onclick="loadExample()">📚 Ready Examples</button>
+            </div>
+
+            <div class="words-list" id="sentencesList">
+                <div class="empty-state">
+                    <div class="icon">📝</div>
+                    <p>You haven't added any sentences yet. Add at least two sentences to start!</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="startGame()" id="startBtn" disabled>🎮 Start Game</button>
+                <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
+                <button class="btn btn-warning" onclick="clearCurrent()">🆕 New Sentences</button>
+            </div>
+        </div>
+
+        <!-- ===== Game Section ===== -->
+        <div class="game-section" id="gameSection">
+            <div class="game-info">
+                <div class="score-board">
+                    <div class="score-item" id="scoreItem" style="display: none;">
+                        Score: <span id="score">0</span>
+                    </div>
+                    <div class="score-item">
+                        Question: <span id="currentSentence">1</span> / <span id="totalSentences">0</span>
+                    </div>
+                    <div class="score-item" id="timerItem" style="display: none;">
+                        Time: <span class="timer" id="timer">00:00</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="resetGame()">🔄 New Game</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+
+            <h3 style="text-align: center; margin-bottom: 15px; color: #555;">🎧 Listen and find the missing word:</h3>
+
+            <div style="text-align: center; margin-bottom: 25px;">
+                <button class="btn btn-primary" onclick="playCurrentAudio()" style="padding: 15px 30px; font-size: 1.2rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);">
+                    🔊 Play Audio
+                </button>
+                <p style="color: #888; margin-top: 10px; font-size: 0.9rem;">Click to listen to the sentence</p>
+            </div>
+
+            <div class="sentence-display" id="sentenceDisplay">___</div>
+
+            <h4 style="text-align: center; color: #666; margin-bottom: 15px;">Choose the missing word:</h4>
+            <div class="words-pool" id="optionsPool"></div>
+
+            <div class="game-controls">
+                <button class="btn btn-success" onclick="checkAnswer()">✅ Check Answer</button>
+                <button class="btn btn-secondary" onclick="playCurrentAudio()">🔊 Replay Audio</button>
+                <button class="btn btn-warning" onclick="showHint()">💡 Hint</button>
+            </div>
+
+            <div class="result-message" id="resultMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Global Variables =====
+        let sentences = [];
+        let currentSentenceIndex = 0;
+        let currentLevelData = null;
+        let userAnswer = null;
+        let score = 0;
+        let timerInterval = null;
+        let seconds = 0;
+        let gameActive = false;
+        let currentSetName = '';
+        let selectedHiddenWord = null;
+
+        // Recording Variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let currentAudioBase64 = null;
+        let previewAudioObj = null;
+
+        const STORAGE_KEY = 'englishMaster_listening_detective';
+
+        // ===== Page Initialization =====
+        window.onload = function() {
+            loadSavedSets();
+            document.getElementById('sentenceInput').addEventListener('input', updateWordSelector);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+            }
+        };
+
+        // ===== NEW: Recording Logic =====
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        currentAudioBase64 = reader.result;
+                        document.getElementById('recordStatusText').textContent = '✅ Custom audio recorded!';
+                        document.getElementById('recordStatusText').style.color = '#2ecc71';
+                        document.getElementById('btnPlayPreview').disabled = false;
+                        
+                        // Create preview audio object
+                        previewAudioObj = new Audio(currentAudioBase64);
+                    };
+                    
+                    // Stop all tracks to release microphone
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                document.getElementById('btnRecord').disabled = true;
+                document.getElementById('btnRecord').classList.add('recording');
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('recordingDot').classList.add('active');
+                document.getElementById('recordStatusText').textContent = '🔴 Recording... (Speak now)';
+                document.getElementById('recordStatusText').style.color = '#e74c3c';
+
+            } catch (err) {
+                alert('❌ Microphone access denied or not available. Please allow microphone permissions.');
+                console.error(err);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('btnRecord').disabled = false;
+                document.getElementById('btnRecord').classList.remove('recording');
+                document.getElementById('btnStop').disabled = true;
+                document.getElementById('recordingDot').classList.remove('active');
+            }
+        }
+
+        function playPreview() {
+            if (previewAudioObj) {
+                previewAudioObj.currentTime = 0;
+                previewAudioObj.play();
+            }
+        }
+
+        function clearRecording() {
+            currentAudioBase64 = null;
+            previewAudioObj = null;
+            document.getElementById('recordStatusText').textContent = 'No audio recorded (Will use Text-to-Speech)';
+            document.getElementById('recordStatusText').style.color = '#555';
+            document.getElementById('btnPlayPreview').disabled = true;
+        }
+
+        // ===== Sound System (Fallback TTS) =====
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        function playCorrectSound() { /* ... (same as before) ... */
+            try {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain); gain.connect(audioContext.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                osc.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+                osc.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.4);
+            } catch(e) {}
+        }
+        function playWrongSound() { /* ... (same as before) ... */
+            try {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain); gain.connect(audioContext.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioContext.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.3);
+            } catch(e) {}
+        }
+        function playWinSound() { /* ... (same as before) ... */
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain); gain.connect(audioContext.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
+                    gain.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
+                    osc.start(audioContext.currentTime + i * 0.15); osc.stop(audioContext.currentTime + i * 0.15 + 0.3);
+                });
+            } catch(e) {}
+        }
+
+        // ===== Text to Speech (Fallback) =====
+        function playTTS(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                const voices = window.speechSynthesis.getVoices();
+                const enVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+                if (enVoice) utterance.voice = enVoice;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // ===== Play Current Audio (Smart: Custom OR TTS) =====
+        function playCurrentAudio() {
+            if (!currentLevelData) return;
+            
+            if (currentLevelData.audioData) {
+                // Play custom recorded audio
+                const audio = new Audio(currentLevelData.audioData);
+                audio.play().catch(e => {
+                    console.error("Audio play failed, falling back to TTS", e);
+                    playTTS(currentLevelData.spokenText);
+                });
+            } else {
+                // Fallback to Text-to-Speech
+                playTTS(currentLevelData.spokenText);
+            }
+        }
+
+        // ===== Interactive Word Selector =====
+        function updateWordSelector() {
+            const input = document.getElementById('sentenceInput').value.trim();
+            const selector = document.getElementById('wordSelector');
+            const preview = document.getElementById('sentencePreview');
+            const previewText = document.getElementById('previewText');
+
+            if (!input) {
+                selector.innerHTML = 'Type a sentence above to select the hidden word...';
+                selector.classList.add('empty');
+                preview.style.display = 'none';
+                selectedHiddenWord = null;
+                clearRecording(); // Clear audio if text changes
+                return;
+            }
+
+            // Clear recording if text is significantly changed to avoid mismatch
+            if (currentAudioBase64) {
+                clearRecording();
+            }
+
+            const words = input.split(/\s+/).filter(w => w.length > 0);
+            selector.innerHTML = '';
+            selector.classList.remove('empty');
+
+            words.forEach((word) => {
+                const tag = document.createElement('span');
+                tag.className = 'word-tag';
+                tag.textContent = word;
+                tag.onclick = () => selectHiddenWord(word, tag, words);
+                selector.appendChild(tag);
+            });
+
+            preview.style.display = 'block';
+            updatePreviewText(words);
+        }
+
+        function selectHiddenWord(word, tagElement, allWords) {
+            document.querySelectorAll('.word-tag').forEach(t => t.classList.remove('selected'));
+            tagElement.classList.add('selected');
+            selectedHiddenWord = word;
+            updatePreviewText(allWords);
+        }
+
+        function updatePreviewText(words) {
+            const previewText = document.getElementById('previewText');
+            if (!selectedHiddenWord) {
+                previewText.innerHTML = '<span style="color:#e74c3c">⚠️ Please click a word above to hide it!</span>';
+            } else {
+                const cleanSelected = selectedHiddenWord.replace(/[^\w']/g, "").toLowerCase();
+                const display = words.map(w => {
+                    const cleanW = w.replace(/[^\w']/g, "").toLowerCase();
+                    return cleanW === cleanSelected ? '___' : w;
+                }).join(' ');
+                previewText.innerHTML = display;
+            }
+        }
+
+        // ===== Add Sentence =====
+        function addSentence() {
+            const input = document.getElementById('sentenceInput').value.trim();
+            if (!input) { alert('Please write a sentence!'); return; }
+            if (!selectedHiddenWord) { alert('Please click on the word you want to hide first!'); return; }
+
+            const words = input.split(/\s+/).filter(w => w.length > 0);
+            if (words.length < 2) { alert('The sentence must contain at least two words!'); return; }
+
+            sentences.push({
+                text: input,
+                hiddenWord: selectedHiddenWord,
+                audioData: currentAudioBase64, // Save the recorded audio
+                solved: false
+            });
+
+            // Reset form
+            document.getElementById('sentenceInput').value = '';
+            document.getElementById('wordSelector').innerHTML = 'Type a sentence above to select the hidden word...';
+            document.getElementById('wordSelector').classList.add('empty');
+            document.getElementById('sentencePreview').style.display = 'none';
+            selectedHiddenWord = null;
+            clearRecording();
+            document.getElementById('sentenceInput').focus();
+
+            updateSentencesList();
+        }
+
+        // ===== Update Sentences List =====
+        function updateSentencesList() {
+            const list = document.getElementById('sentencesList');
+            if (sentences.length === 0) {
+                list.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>You haven't added any sentences yet. Add at least two sentences to start!</p></div>`;
+                document.getElementById('startBtn').disabled = true;
+                return;
+            }
+
+            list.innerHTML = '<h3>Added Sentences (' + sentences.length + ')' + 
+                (currentSetName ? ' - <span style="color:#2ecc71">[' + currentSetName + ']</span>' : '') + '</h3>';
+            
+            sentences.forEach((sentence, index) => {
+                const item = document.createElement('div');
+                item.style.cssText = 'background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #2ecc71;';
+                
+                const cleanHidden = sentence.hiddenWord.replace(/[^\w']/g, "").toLowerCase();
+                const displayText = sentence.text.split(/\s+/).map(w => {
+                    const cleanW = w.replace(/[^\w']/g, "").toLowerCase();
+                    return cleanW === cleanHidden ? `<span style="color:#e74c3c; font-weight:bold;">[${w}]</span>` : w;
+                }).join(' ');
+
+                const audioIcon = sentence.audioData ? '🎤' : '🤖';
+                const audioTooltip = sentence.audioData ? 'Custom Audio' : 'Text-to-Speech';
+
+                item.innerHTML = `
+                    <div style="direction: ltr; flex: 1; line-height: 1.5;">
+                        <strong>${index + 1}.</strong> ${displayText} 
+                        <span title="${audioTooltip}" style="font-size: 1.2rem; margin-left: 10px;">${audioIcon}</span>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="removeSentence(${index})" title="Delete">✕</button>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('startBtn').disabled = sentences.length < 1;
+        }
+
+        function removeSentence(index) {
+            sentences.splice(index, 1);
+            updateSentencesList();
+        }
+
+        function clearAll() {
+            if (sentences.length === 0) return;
+            if (confirm('Are you sure you want to clear all sentences?')) {
+                sentences = [];
+                currentSetName = '';
+                updateSentencesList();
+            }
+        }
+
+        function clearCurrent() {
+            if (sentences.length > 0 && !confirm('Current sentences will be cleared. Do you want to continue?')) return;
+            sentences = [];
+            currentSetName = '';
+            updateSentencesList();
+            showNotification('🆕 You can now add new sentences', 'success');
+        }
+
+        function loadExample() {
+            sentences = [
+                { text: "The cat is sleeping on the sofa", hiddenWord: "sleeping", audioData: null, solved: false },
+                { text: "She goes to school every day", hiddenWord: "school", audioData: null, solved: false },
+                { text: "My father works in a big company", hiddenWord: "works", audioData: null, solved: false }
+            ];
+            currentSetName = '';
+            updateSentencesList();
+            showNotification('📚 Ready examples loaded! (Using Text-to-Speech)', 'success');
+        }
+
+        // ===== Save and Load System =====
+        function getSavedSets() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveSets(sets) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+            } catch (e) {
+                alert('⚠️ Storage full! Audio recordings are large. Try exporting to a file or recording shorter clips.');
+            }
+        }
+
+        function saveCurrentSet() {
+            if (sentences.length < 1) { alert('Add at least one sentence before saving!'); return; }
+            const nameInput = document.getElementById('setNameInput');
+            let name = nameInput.value.trim() || `Listening Set - ${new Date().toLocaleDateString('en-US')}`;
+
+            const sets = getSavedSets();
+            const existingIndex = sets.findIndex(s => s.name === name);
+            
+            if (existingIndex !== -1) {
+                if (!confirm(`The set "${name}" already exists. Replace it?`)) return;
+                sets[existingIndex] = { name, sentences: JSON.parse(JSON.stringify(sentences)), createdAt: new Date().toISOString() };
+            } else {
+                sets.push({ name, sentences: JSON.parse(JSON.stringify(sentences)), createdAt: new Date().toISOString() });
+            }
+
+            saveSets(sets);
+            nameInput.value = '';
+            currentSetName = name;
+            updateSentencesList();
+            loadSavedSets();
+            showNotification(`✅ Set "${name}" saved!`, 'success');
+        }
+
+        function loadSavedSets() {
+            const container = document.getElementById('savedSetsList');
+            const sets = getSavedSets();
+            if (sets.length === 0) {
+                container.innerHTML = `<div class="empty-sets"><div class="icon">📂</div><p>No saved sets. Add sentences and save them!</p></div>`;
+                return;
+            }
+            container.innerHTML = '';
+            sets.forEach((set, index) => {
+                const card = document.createElement('div');
+                card.className = 'saved-set-card' + (set.name === currentSetName ? ' active' : '');
+                const dateStr = new Date(set.createdAt).toLocaleDateString('en-US');
+                card.innerHTML = `
+                    <div class="set-name">${set.name}</div>
+                    <div class="set-info">${set.sentences.length} sentences | ${dateStr}</div>
+                    <div class="set-actions">
+                        <button class="btn-load" onclick="loadSet(${index})">📂 Load</button>
+                        <button class="btn-delete-set" onclick="deleteSet(${index})">🗑️ Delete</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function loadSet(index) {
+            const sets = getSavedSets();
+            if (sentences.length > 0 && !confirm('Current sentences will be replaced. Continue?')) return;
+            sentences = JSON.parse(JSON.stringify(sets[index].sentences));
+            currentSetName = sets[index].name;
+            updateSentencesList();
+            showNotification(`📂 Set "${sets[index].name}" loaded`, 'success');
+            loadSavedSets();
+        }
+
+        function deleteSet(index) {
+            const sets = getSavedSets();
+            const setName = sets[index].name;
+            if (!confirm(`Delete "${setName}"?`)) return;
+            sets.splice(index, 1);
+            saveSets(sets);
+            if (currentSetName === setName) currentSetName = '';
+            loadSavedSets();
+            updateSentencesList();
+            showNotification(`🗑️ Set "${setName}" deleted`, 'success');
+        }
+
+        // ===== Export and Import =====
+        function exportAllSets() {
+            const sets = getSavedSets();
+            if (sets.length === 0) { alert('No sets to export!'); return; }
+            const blob = new Blob([JSON.stringify(sets, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `english-master-listening-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showNotification('📥 All sets exported!', 'success');
+        }
+
+        function importSetsFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!Array.isArray(imported)) throw new Error('Invalid file');
+                    const existing = getSavedSets();
+                    let added = 0, replaced = 0;
+                    imported.forEach(newSet => {
+                        const index = existing.findIndex(s => s.name === newSet.name);
+                        if (index !== -1) { existing[index] = newSet; replaced++; }
+                        else { existing.push(newSet); added++; }
+                    });
+                    saveSets(existing);
+                    loadSavedSets();
+                    showNotification(`✅ Import successful!\nNew: ${added} | Updated: ${replaced}`, 'success');
+                } catch (err) {
+                    alert('❌ Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showNotification(text, type) {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.innerHTML = text.replace(/\\n/g, '<br>');
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 4000);
+        }
+
+        // ===== Game Logic =====
+        function prepareLevel(index) {
+            currentSentenceIndex = index;
+            const sentence = sentences[index];
+            const words = sentence.text.split(/\s+/).filter(w => w.length > 0);
+            
+            const cleanTarget = sentence.hiddenWord.replace(/[^\w']/g, "").toLowerCase();
+            
+            const displayWords = words.map(w => {
+                const cleanW = w.replace(/[^\w']/g, "").toLowerCase();
+                return cleanW === cleanTarget ? "___" : w;
+            });
+            
+            let distractors = [];
+            sentences.forEach((s, i) => {
+                if (i !== index) {
+                    const otherWords = s.text.split(/\s+/).map(w => w.replace(/[^\w']/g, "").toLowerCase());
+                    otherWords.forEach(w => {
+                        if (w.length > 2 && w !== cleanTarget && !distractors.includes(w)) {
+                            distractors.push(w);
+                        }
+                    });
+                }
+            });
+            
+            distractors = [...new Set(distractors)].sort(() => Math.random() - 0.5).slice(0, 3);
+            const fallbacks = ["running", "eating", "playing", "walking", "talking", "reading", "happy", "big", "small"];
+            let fIdx = 0;
+            while (distractors.length < 3 && fIdx < fallbacks.length) {
+                if (!distractors.includes(fallbacks[fIdx]) && fallbacks[fIdx] !== cleanTarget) {
+                    distractors.push(fallbacks[fIdx]);
+                }
+                fIdx++;
+            }
+
+            currentLevelData = {
+                displayText: displayWords.join(" "),
+                cleanTarget: cleanTarget,
+                options: [cleanTarget, ...distractors].sort(() => Math.random() - 0.5),
+                spokenText: sentence.text,
+                audioData: sentence.audioData // Pass custom audio to game
+            };
+            userAnswer = null;
+        }
+
+        function renderGame() {
+            document.getElementById('sentenceDisplay').textContent = currentLevelData.displayText;
+            const pool = document.getElementById('optionsPool');
+            pool.innerHTML = '';
+            
+            currentLevelData.options.forEach(word => {
+                const chip = document.createElement('div');
+                chip.className = 'word-chip';
+                chip.textContent = word;
+                chip.onclick = () => selectOption(word, chip);
+                pool.appendChild(chip);
+            });
+            
+            document.getElementById('resultMessage').className = 'result-message';
+        }
+
+        function selectOption(word, chip) {
+            if (!gameActive) return;
+            document.querySelectorAll('.word-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+            userAnswer = word;
+        }
+
+        function startGame() {
+            if (sentences.length < 1) { alert('Add at least one sentence!'); return; }
+
+            score = 0;
+            currentSentenceIndex = 0;
+            gameActive = true;
+            sentences.forEach(s => s.solved = false);
+
+            document.getElementById('score').textContent = '0';
+            document.getElementById('currentSentence').textContent = '1';
+            document.getElementById('totalSentences').textContent = sentences.length;
+            document.getElementById('progressBar').style.width = '0%';
+            
+            const enableScore = document.getElementById('enableScore').checked;
+            const enableTimer = document.getElementById('enableTimer').checked;
+            const timerDuration = parseInt(document.getElementById('timerDuration').value);
+
+            document.getElementById('scoreItem').style.display = enableScore ? 'block' : 'none';
+            document.getElementById('timerItem').style.display = enableTimer ? 'block' : 'none';
+            document.getElementById('timer').textContent = enableTimer ? formatTime(timerDuration) : '00:00';
+
+            document.getElementById('gameSection').classList.add('active');
+            document.getElementById('teacherSection').style.display = 'none';
+
+            prepareLevel(0);
+            renderGame();
+
+            if (enableTimer) {
+                seconds = timerDuration;
+                startCountdown();
+            } else {
+                startStopwatch();
+            }
+            
+            setTimeout(playCurrentAudio, 500);
+        }
+
+        function updateProgress() {
+            const progress = (currentSentenceIndex / sentences.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('currentSentence').textContent = currentSentenceIndex + 1;
+        }
+
+        function checkAnswer() {
+            if (!gameActive || !userAnswer) {
+                showMessage('⚠️ Please select a word first!', 'error');
+                return;
+            }
+            
+            const isCorrect = userAnswer.toLowerCase() === currentLevelData.cleanTarget.toLowerCase();
+            
+            if (isCorrect) {
+                playCorrectSound();
+                sentences[currentSentenceIndex].solved = true;
+                
+                if (document.getElementById('enableScore').checked) {
+                    score += 10;
+                    document.getElementById('score').textContent = score;
+                }
+                
+                showMessage('✅ Correct! Well done!', 'success');
+                
+                document.querySelectorAll('.word-chip').forEach(c => {
+                    if (c.textContent.toLowerCase() === userAnswer.toLowerCase()) c.classList.add('correct');
+                });
+                
+                setTimeout(() => {
+                    if (currentSentenceIndex < sentences.length - 1) {
+                        currentSentenceIndex++;
+                        prepareLevel(currentSentenceIndex);
+                        renderGame();
+                        updateProgress();
+                        setTimeout(playCurrentAudio, 300);
+                    } else {
+                        endGame();
+                    }
+                }, 1500);
+            } else {
+                playWrongSound();
+                showMessage('❌ Incorrect! Listen again and try.', 'error');
+                
+                document.querySelectorAll('.word-chip').forEach(c => {
+                    if (c.classList.contains('selected')) c.classList.add('wrong');
+                });
+                
+                setTimeout(() => {
+                    document.querySelectorAll('.word-chip').forEach(c => c.classList.remove('wrong', 'selected'));
+                    userAnswer = null;
+                }, 1000);
+            }
+        }
+
+        function showHint() {
+            if (!gameActive) return;
+            const firstLetter = currentLevelData.cleanTarget.charAt(0).toUpperCase();
+            showMessage(`💡 Hint: The word starts with the letter "${firstLetter}"`, 'success');
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('resultMessage');
+            msg.textContent = text;
+            msg.className = 'result-message show ' + type;
+            setTimeout(() => msg.classList.remove('show'), 2000);
+        }
+
+        function formatTime(secs) {
+            const m = Math.floor(secs / 60).toString().padStart(2, '0');
+            const s = (secs % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function startCountdown() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                seconds--;
+                document.getElementById('timer').textContent = formatTime(seconds);
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    gameActive = false;
+                    showMessage('⏰ Time is up!', 'error');
+                    setTimeout(() => {
+                        alert(`Time is up!\nCompleted: ${sentences.filter(s => s.solved).length}/${sentences.length}`);
+                        resetGame();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        function startStopwatch() {
+            clearInterval(timerInterval);
+            seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                document.getElementById('timer').textContent = formatTime(seconds);
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            playWinSound();
+            
+            const enableScore = document.getElementById('enableScore').checked;
+            const solved = sentences.filter(s => s.solved).length;
+            const accuracy = Math.round((solved / sentences.length) * 100);
+            
+            let message = `🎉 Congratulations! You completed the game!\n\n`;
+            message += `✅ Correct: ${solved}/${sentences.length}\n`;
+            message += `📊 Accuracy: ${accuracy}%\n`;
+            if (enableScore) message += `🏆 Score: ${score}\n`;
+            
+            let stars = '⭐';
+            if (accuracy >= 90) stars = '⭐⭐⭐';
+            else if (accuracy >= 70) stars = '⭐⭐';
+            message += `\nRating: ${stars}`;
+
+            setTimeout(() => {
+                alert(message);
+                createConfetti();
+            }, 500);
+        }
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            gameActive = false;
+            document.getElementById('gameSection').classList.remove('active');
+            document.getElementById('teacherSection').style.display = 'block';
+        }
+
+        function createConfetti() {
+            const colors = ['#2ecc71', '#27ae60', '#f39c12', '#e74c3c', '#3498db', '#9b59b6'];
+            for (let i = 0; i < 60; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        }
+    </script>
+</body>
+</html>

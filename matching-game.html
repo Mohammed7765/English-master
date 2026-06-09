@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Matching Game - English Master</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .back-link a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        /* ===== Teacher Settings Section ===== */
+        .teacher-section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .teacher-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .game-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .option-item label {
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .option-item select {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ===== Save/Load Sets Section ===== */
+        .saved-sets-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .saved-sets-section h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .save-set-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .save-set-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .save-set-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .saved-sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .saved-set-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .saved-set-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .saved-set-card.active {
+            border-color: #2ecc71;
+            background: #f0fff4;
+        }
+
+        .saved-set-card .set-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .saved-set-card .set-info {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .saved-set-card .set-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .set-actions button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .btn-load {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-load:hover {
+            background: #5a67d8;
+        }
+
+        .btn-delete-set {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete-set:hover {
+            background: #c0392b;
+        }
+
+        .empty-sets {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .empty-sets .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* ===== Export/Import Section ===== */
+        .transfer-section {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px dashed #667eea;
+        }
+
+        .transfer-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .transfer-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .transfer-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-export {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-import {
+            background: #2ecc71;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-import:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .btn-import input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .input-group input[type="text"] {
+            flex: 1;
+            min-width: 180px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .image-upload {
+            position: relative;
+        }
+
+        .image-upload input[type="file"] {
+            display: none;
+        }
+
+        .image-upload label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 15px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .image-upload label:hover {
+            border-color: #667eea;
+            background: #eef0ff;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .words-list {
+            margin-top: 20px;
+        }
+
+        .words-list h3 {
+            color: #555;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .word-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .word-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .word-item .word-text {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .word-item .word-text strong {
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .word-item .word-text span {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .word-item .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .word-item .remove-btn:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+
+        /* ===== Game Section ===== */
+        .game-section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .game-section.active {
+            display: block;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .score-board {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .score-item span {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .timer {
+            font-size: 1.2rem;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        .column-title {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .words-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .word-card {
+            padding: 15px 20px;
+            background: #fff;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 1.1rem;
+            position: relative;
+            user-select: none;
+            z-index: 2;
+        }
+
+        .word-card:hover:not(.matched):not(.disabled) {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .word-card.selected {
+            border-color: #667eea;
+            background: #eef0ff;
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .word-card.matched {
+            border-color: #2ecc71;
+            background: #e8f8f0;
+            cursor: not-allowed;
+            opacity: 0.85;
+            animation: matchPulse 0.6s ease;
+        }
+
+        .word-card.matched::after {
+            content: '✓';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: #2ecc71;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .word-card.wrong {
+            border-color: #e74c3c;
+            background: #fdeaea;
+            animation: shake 0.5s ease;
+            cursor: not-allowed;
+        }
+
+        .word-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .word-card.correct-match {
+            animation: correctShake 0.5s ease;
+        }
+
+        .word-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @keyframes matchPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+        }
+
+        @keyframes correctShake {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.05); }
+            50% { transform: scale(0.95); }
+            75% { transform: scale(1.02); }
+        }
+
+        .result-message {
+            text-align: center;
+            padding: 18px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-size: 1.1rem;
+            display: none;
+            font-weight: bold;
+        }
+
+        .result-message.show {
+            display: block;
+        }
+
+        .result-message.success {
+            background: #e8f8f0;
+            color: #27ae60;
+            border: 2px solid #2ecc71;
+        }
+
+        .result-message.error {
+            background: #fdeaea;
+            color: #c0392b;
+            border: 2px solid #e74c3c;
+        }
+
+        .result-message.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 2px solid #3498db;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            position: absolute;
+            top: -10px;
+            animation: fall linear forwards;
+            z-index: 9999;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            animation: slideDown 0.3s ease;
+        }
+
+        .notification.success {
+            background: #2ecc71;
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .help-text {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #1565c0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ===== Curved Connection Lines (LTR) ===== */
+        .connection-svg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-path {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-dasharray: 2000;
+            stroke-dashoffset: 2000;
+            animation: drawPath 1s ease forwards;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+        }
+
+        @keyframes drawPath {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .connection-dot {
+            animation: pulseDot 1.5s ease infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Back -->
+        <div class="back-link">
+            <a href="index.html">← Back to Main Menu</a>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <h1>🔗 Word Matching Game</h1>
+            <p>Match the English word with its meaning or image</p>
+        </div>
+
+        <!-- ===== Teacher Section ===== -->
+        <div class="teacher-section" id="teacherSection">
+            <h2>⚙️ Game Settings</h2>
+
+            <!-- Game Mode -->
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: bold;">Matching Mode:</label>
+                <div class="mode-selector">
+                    <button class="mode-btn active" onclick="setMode('word-definition')" id="mode-word-definition">
+                        📝 Word ↔ Definition
+                    </button>
+                    <button class="mode-btn" onclick="setMode('word-image')" id="mode-word-image">
+                        🖼️ Word ↔ Image
+                    </button>
+                    <button class="mode-btn" onclick="setMode('word-synonym')" id="mode-word-synonym">
+                        🔄 Word ↔ Synonym/Antonym
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Options -->
+            <div class="game-options">
+                <div class="option-item">
+                    <input type="checkbox" id="enableScore" checked>
+                    <label for="enableScore">Enable Score</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="enableTimer">
+                    <label for="enableTimer">Enable Timer</label>
+                </div>
+                <div class="option-item">
+                    <label for="timerDuration">Timer Duration:</label>
+                    <select id="timerDuration">
+                        <option value="60">1 Minute</option>
+                        <option value="120">2 Minutes</option>
+                        <option value="180">3 Minutes</option>
+                        <option value="300">5 Minutes</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="showFeedback" checked>
+                    <label for="showFeedback">Show Instant Feedback</label>
+                </div>
+            </div>
+
+            <!-- ===== Export/Import Section ===== -->
+            <div class="transfer-section">
+                <h3>💾 Transfer Sets (Export / Import)</h3>
+                <div class="help-text">
+                    📌 <strong>How to use:</strong><br>
+                    1. Prepare words at home ← Save them ← Click <strong>"📥 Export All"</strong><br>
+                    2. Transfer the file to school (USB, email, WhatsApp...)<br>
+                    3. At school ← Click <strong>"📤 Import"</strong> ← Choose file ← Ready!
+                </div>
+                <div class="transfer-buttons">
+                    <button class="transfer-btn btn-export" onclick="exportAllSets()">
+                        📥 Export All as File
+                    </button>
+                    <button class="transfer-btn btn-import">
+                        📤 Import from File
+                        <input type="file" accept=".json" onchange="importSetsFromFile(event)">
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== Saved Sets Section ===== -->
+            <div class="saved-sets-section">
+                <h3>📂 Saved Sets on This Device</h3>
+                
+                <div class="save-set-form">
+                    <input type="text" id="setNameInput" placeholder="Set name (e.g., Unit 1 - School)">
+                    <button class="btn btn-success" onclick="saveCurrentSet()">💾 Save to Device</button>
+                </div>
+
+                <div class="saved-sets-grid" id="savedSetsList">
+                    <div class="empty-sets">
+                        <div class="icon">📂</div>
+                        <p>No saved sets. Add words and save them!</p>
+                    </div>
+                </div>
+            </div>
+
+            <h2>📝 Add Words</h2>
+
+            <!-- Word Input -->
+            <div class="input-group">
+                <input type="text" id="leftInput" placeholder="Word" dir="ltr">
+                <input type="text" id="rightInput" placeholder="Definition / Meaning" dir="ltr">
+                
+                <div class="image-upload" id="imageUploadArea" style="display: none;">
+                    <input type="file" id="imageInput" accept="image/*" onchange="previewImage(this)">
+                    <label for="imageInput">
+                        📷 <span id="imageLabel">Choose Image</span>
+                    </label>
+                </div>
+                
+                <button class="btn btn-primary" onclick="addWord()">➕ Add</button>
+            </div>
+
+            <div id="imagePreviewArea" style="margin-bottom: 15px; display: none;">
+                <img id="previewImg" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px; border: 2px solid #667eea;">
+            </div>
+
+            <!-- Words List -->
+            <div class="words-list" id="wordsList">
+                <div class="empty-state">
+                    <div class="icon">📝</div>
+                    <p>You haven't added any words yet. Add at least 2 words to start!</p>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="startGame()" id="startBtn" disabled>🎮 Start Game</button>
+                <button class="btn btn-secondary" onclick="loadExample()">📚 Load Examples</button>
+                <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
+                <button class="btn btn-warning" onclick="clearCurrentWords()">🆕 New Words</button>
+            </div>
+        </div>
+
+        <!-- ===== Game Section ===== -->
+        <div class="game-section" id="gameSection">
+            <div class="game-info">
+                <div class="score-board">
+                    <div class="score-item" id="scoreItem" style="display: none;">
+                        Score: <span id="score">0</span>
+                    </div>
+                    <div class="score-item">
+                        Matches: <span id="matches">0</span> / <span id="totalWords">0</span>
+                    </div>
+                    <div class="score-item" id="timerItem" style="display: none;">
+                        Time: <span class="timer" id="timer">00:00</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="resetGame()">🔄 New Game</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+
+            <div class="game-area" id="gameArea">
+                <div>
+                    <div class="column-title" id="leftTitle">🇬🇧 Words</div>
+                    <div class="words-column" id="leftColumn"></div>
+                </div>
+                <div>
+                    <div class="column-title" id="rightTitle">📝 Definitions</div>
+                    <div class="words-column" id="rightColumn"></div>
+                </div>
+            </div>
+
+            <div class="result-message" id="resultMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Global Variables =====
+        let words = [];
+        let gameMode = 'word-definition';
+        let selectedLeft = null;
+        let selectedRight = null;
+        let score = 0;
+        let matches = 0;
+        let attempts = 0;
+        let timerInterval = null;
+        let seconds = 0;
+        let gameActive = false;
+        let currentImage = null;
+        let wrongTimeout = null;
+        let currentSetName = '';
+        let activeConnections = [];
+        let connectionColorIndex = 0;
+
+        const STORAGE_KEY = 'englishMaster_sets';
+
+        // ===== Connection Colors =====
+        const connectionColors = [
+            '#2ecc71', '#3498db', '#e74c3c', '#f39c12', 
+            '#9b59b6', '#1abc9c', '#e67e22', '#34495e',
+            '#16a085', '#2980b9', '#c0392b', '#8e44ad'
+        ];
+
+        function getNextColor() {
+            const color = connectionColors[connectionColorIndex % connectionColors.length];
+            connectionColorIndex++;
+            return color;
+        }
+
+        // ===== Page Initialization =====
+        window.onload = function() {
+            loadSavedSets();
+        };
+
+        // ===== Sound System =====
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playCorrectSound() {
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.4);
+            } catch(e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        function playWrongSound() {
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch(e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        function playWinSound() {
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.15);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
+                    oscillator.start(audioContext.currentTime + i * 0.15);
+                    oscillator.stop(audioContext.currentTime + i * 0.15 + 0.3);
+                });
+            } catch(e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        // ===== Draw Curved Line (LTR) =====
+        function drawConnection(leftCard, rightCard) {
+            const leftRect = leftCard.getBoundingClientRect();
+            const rightRect = rightCard.getBoundingClientRect();
+            
+            // LTR: From right edge of left card (word) to left edge of right card (meaning)
+            
+            // Start point: right edge of left card (English word)
+            const startX = leftRect.right;
+            const startY = leftRect.top + leftRect.height / 2;
+            
+            // End point: left edge of right card (meaning)
+            const endX = rightRect.left;
+            const endY = rightRect.top + rightRect.height / 2;
+            
+            // Calculate distance and curve
+            const distX = endX - startX;
+            const distY = endY - startY;
+            
+            // Control points for Bezier curve
+            const controlX1 = startX + distX * 0.3;
+            const controlY1 = startY;
+            const controlX2 = endX - distX * 0.3;
+            const controlY2 = endY;
+            
+            const color = getNextColor();
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'connection-svg');
+            
+            // Curved path
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const d = `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`;
+            path.setAttribute('d', d);
+            path.setAttribute('stroke', color);
+            path.setAttribute('class', 'connection-path');
+            
+            // Start dot
+            const startDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            startDot.setAttribute('cx', startX);
+            startDot.setAttribute('cy', startY);
+            startDot.setAttribute('r', '5');
+            startDot.setAttribute('fill', color);
+            startDot.setAttribute('class', 'connection-dot');
+            
+            // End dot
+            const endDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            endDot.setAttribute('cx', endX);
+            endDot.setAttribute('cy', endY);
+            endDot.setAttribute('r', '5');
+            endDot.setAttribute('fill', color);
+            endDot.setAttribute('class', 'connection-dot');
+            
+            // End arrow (pointing right - toward meaning)
+            const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            const arrowSize = 10;
+            // Calculate arrow angle
+            const angle = Math.atan2(endY - controlY2, endX - controlX2);
+            const arrowX1 = endX - arrowSize * Math.cos(angle - Math.PI / 6);
+            const arrowY1 = endY - arrowSize * Math.sin(angle - Math.PI / 6);
+            const arrowX2 = endX - arrowSize * Math.cos(angle + Math.PI / 6);
+            const arrowY2 = endY - arrowSize * Math.sin(angle + Math.PI / 6);
+            arrow.setAttribute('points', `${endX},${endY} ${arrowX1},${arrowY1} ${arrowX2},${arrowY2}`);
+            arrow.setAttribute('fill', color);
+            
+            svg.appendChild(path);
+            svg.appendChild(startDot);
+            svg.appendChild(endDot);
+            svg.appendChild(arrow);
+            
+            document.body.appendChild(svg);
+            activeConnections.push(svg);
+        }
+
+        function removeAllConnections() {
+            activeConnections.forEach(svg => svg.remove());
+            activeConnections = [];
+            connectionColorIndex = 0;
+        }
+
+        // ===== Game Mode =====
+        function setMode(mode) {
+            gameMode = mode;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('mode-' + mode).classList.add('active');
+            
+            const leftInput = document.getElementById('leftInput');
+            const rightInput = document.getElementById('rightInput');
+            const imageArea = document.getElementById('imageUploadArea');
+            const leftTitle = document.getElementById('leftTitle');
+            const rightTitle = document.getElementById('rightTitle');
+            
+            if (words.length > 0 && !confirm('Changing mode will delete current words. Continue?')) {
+                return;
+            }
+            words = [];
+            currentImage = null;
+            currentSetName = '';
+            updateWordsList();
+            
+            if (mode === 'word-definition') {
+                leftInput.placeholder = 'Word';
+                rightInput.placeholder = 'Definition / Meaning';
+                imageArea.style.display = 'none';
+                leftTitle.innerHTML = '🇬🇧 Words';
+                rightTitle.innerHTML = '📝 Definitions';
+            } else if (mode === 'word-image') {
+                leftInput.placeholder = 'Word';
+                rightInput.placeholder = 'Image Description (optional)';
+                imageArea.style.display = 'block';
+                leftTitle.innerHTML = '🇬🇧 Words';
+                rightTitle.innerHTML = '🖼️ Images';
+            } else if (mode === 'word-synonym') {
+                leftInput.placeholder = 'Word';
+                rightInput.placeholder = 'Synonym';
+                imageArea.style.display = 'none';
+                leftTitle.innerHTML = '🇬🇧 Words';
+                rightTitle.innerHTML = '🔄 Synonyms';
+            }
+        }
+
+        // ===== Image Preview =====
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImage = e.target.result;
+                    document.getElementById('previewImg').src = currentImage;
+                    document.getElementById('imagePreviewArea').style.display = 'block';
+                    document.getElementById('imageLabel').textContent = '✓ Image Selected';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ===== Add Word =====
+        function addWord() {
+            const left = document.getElementById('leftInput').value.trim();
+            const right = document.getElementById('rightInput').value.trim();
+
+            if (!left) {
+                alert('Please enter a word!');
+                return;
+            }
+
+            if (gameMode === 'word-image' && !currentImage) {
+                alert('Please choose an image!');
+                return;
+            }
+
+            if (gameMode !== 'word-image' && !right) {
+                alert('Please enter the second part!');
+                return;
+            }
+
+            if (words.some(w => w.left.toLowerCase() === left.toLowerCase())) {
+                alert('This word already exists!');
+                return;
+            }
+
+            words.push({
+                left: left,
+                right: right || '',
+                image: currentImage,
+                matched: false
+            });
+
+            document.getElementById('leftInput').value = '';
+            document.getElementById('rightInput').value = '';
+            document.getElementById('imageInput').value = '';
+            currentImage = null;
+            document.getElementById('imagePreviewArea').style.display = 'none';
+            document.getElementById('imageLabel').textContent = 'Choose Image';
+            document.getElementById('leftInput').focus();
+
+            updateWordsList();
+        }
+
+        // ===== Update Words List =====
+        function updateWordsList() {
+            const list = document.getElementById('wordsList');
+            
+            if (words.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>You haven't added any words yet. Add at least 2 words to start!</p>
+                    </div>
+                `;
+                document.getElementById('startBtn').disabled = true;
+                return;
+            }
+
+            list.innerHTML = '<h3>Current Words (' + words.length + ')' + 
+                (currentSetName ? ' - <span style="color:#667eea">[' + currentSetName + ']</span>' : '') + 
+                '</h3>';
+            
+            words.forEach((word, index) => {
+                const item = document.createElement('div');
+                item.className = 'word-item';
+                
+                let content = '';
+                if (word.image) {
+                    content += `<img src="${word.image}" alt="Image">`;
+                }
+                content += `
+                    <div class="word-text">
+                        <strong>${word.left}</strong>
+                        ${word.right ? '<br><span>' + word.right + '</span>' : ''}
+                    </div>
+                `;
+                
+                item.innerHTML = content + `
+                    <button class="remove-btn" onclick="removeWord(${index})" title="Delete">✕</button>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('startBtn').disabled = words.length < 2;
+        }
+
+        // ===== Remove Word =====
+        function removeWord(index) {
+            words.splice(index, 1);
+            updateWordsList();
+        }
+
+        // ===== Clear All =====
+        function clearAll() {
+            if (words.length === 0) return;
+            if (confirm('Are you sure you want to clear all words?')) {
+                words = [];
+                currentImage = null;
+                currentSetName = '';
+                updateWordsList();
+            }
+        }
+
+        // ===== New Words =====
+        function clearCurrentWords() {
+            if (words.length > 0 && !confirm('Current words will be cleared. Do you want to continue?')) {
+                return;
+            }
+            words = [];
+            currentImage = null;
+            currentSetName = '';
+            updateWordsList();
+            showNotification('🆕 You can now add new words', 'success');
+        }
+
+        // ===== Load Examples =====
+        function loadExample() {
+            if (gameMode === 'word-definition') {
+                words = [
+                    { left: 'Apple', right: 'A round fruit that is typically red, green, or yellow', image: null, matched: false },
+                    { left: 'Book', right: 'A set of printed pages bound together', image: null, matched: false },
+                    { left: 'Car', right: 'A four-wheeled motor vehicle', image: null, matched: false },
+                    { left: 'Dog', right: 'A domesticated carnivorous mammal', image: null, matched: false },
+                    { left: 'Elephant', right: 'A very large plant-eating mammal with a trunk', image: null, matched: false }
+                ];
+            } else if (gameMode === 'word-synonym') {
+                words = [
+                    { left: 'Happy', right: 'Joyful', image: null, matched: false },
+                    { left: 'Big', right: 'Large', image: null, matched: false },
+                    { left: 'Fast', right: 'Quick', image: null, matched: false },
+                    { left: 'Smart', right: 'Clever', image: null, matched: false },
+                    { left: 'Beautiful', right: 'Pretty', image: null, matched: false }
+                ];
+            } else if (gameMode === 'word-image') {
+                alert('Image mode requires manual image upload. Please add words with images.');
+                return;
+            }
+            
+            currentSetName = '';
+            updateWordsList();
+        }
+
+        // ===== Save and Load System =====
+
+        function getSavedSets() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveSets(sets) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+        }
+
+        function saveCurrentSet() {
+            if (words.length < 2) {
+                alert('Add at least 2 words before saving!');
+                return;
+            }
+
+            const nameInput = document.getElementById('setNameInput');
+            let name = nameInput.value.trim();
+
+            if (!name) {
+                const date = new Date();
+                name = `${gameMode === 'word-definition' ? 'Definitions' : gameMode === 'word-synonym' ? 'Synonyms' : 'Images'} Set - ${date.toLocaleDateString('en-US')}`;
+            }
+
+            const sets = getSavedSets();
+            
+            const existingIndex = sets.findIndex(s => s.name === name);
+            if (existingIndex !== -1) {
+                if (!confirm(`The set "${name}" already exists. Do you want to replace it?`)) {
+                    return;
+                }
+                sets[existingIndex] = {
+                    name: name,
+                    mode: gameMode,
+                    words: JSON.parse(JSON.stringify(words)),
+                    createdAt: new Date().toISOString()
+                };
+            } else {
+                sets.push({
+                    name: name,
+                    mode: gameMode,
+                    words: JSON.parse(JSON.stringify(words)),
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            saveSets(sets);
+            nameInput.value = '';
+            currentSetName = name;
+            updateWordsList();
+            loadSavedSets();
+            showNotification(`✅ Set "${name}" saved to device!`, 'success');
+        }
+
+        function loadSavedSets() {
+            const container = document.getElementById('savedSetsList');
+            const sets = getSavedSets();
+
+            if (sets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-sets">
+                        <div class="icon">📂</div>
+                        <p>No saved sets. Add words and save them!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            sets.forEach((set, index) => {
+                const card = document.createElement('div');
+                card.className = 'saved-set-card' + (set.name === currentSetName ? ' active' : '');
+                
+                const date = new Date(set.createdAt);
+                const dateStr = date.toLocaleDateString('en-US');
+                const modeName = set.mode === 'word-definition' ? 'Definitions' : set.mode === 'word-synonym' ? 'Synonyms' : 'Images';
+                const hasImages = set.words.some(w => w.image) ? '🖼️' : '';
+
+                card.innerHTML = `
+                    <div class="set-name">${set.name} ${hasImages}</div>
+                    <div class="set-info">
+                        ${modeName} | ${set.words.length} words | ${dateStr}
+                    </div>
+                    <div class="set-actions">
+                        <button class="btn-load" onclick="loadSet(${index})">📂 Load</button>
+                        <button class="btn-delete-set" onclick="deleteSet(${index})">🗑️ Delete</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function loadSet(index) {
+            const sets = getSavedSets();
+            const set = sets[index];
+            
+            if (!set) return;
+
+            if (words.length > 0 && !confirm('Current words will be replaced. Do you want to continue?')) {
+                return;
+            }
+
+            if (set.mode !== gameMode) {
+                setMode(set.mode);
+            }
+
+            words = JSON.parse(JSON.stringify(set.words));
+            currentSetName = set.name;
+            updateWordsList();
+            showNotification(`📂 Set "${set.name}" loaded`, 'success');
+            loadSavedSets();
+        }
+
+        function deleteSet(index) {
+            const sets = getSavedSets();
+            const setName = sets[index].name;
+            
+            if (!confirm(`Are you sure you want to delete the set "${setName}" from this device?`)) {
+                return;
+            }
+
+            sets.splice(index, 1);
+            saveSets(sets);
+            
+            if (currentSetName === setName) {
+                currentSetName = '';
+            }
+            
+            loadSavedSets();
+            updateWordsList();
+            showNotification(`🗑️ Set "${setName}" deleted`, 'success');
+        }
+
+        // ===== Export and Import =====
+
+        function exportAllSets() {
+            const sets = getSavedSets();
+            if (sets.length === 0) {
+                alert('No sets to export! Add and save first.');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(sets, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `english-master-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showNotification('📥 All sets exported! Transfer the file to school.', 'success');
+        }
+
+        function importSetsFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(imported)) {
+                        throw new Error('Invalid file');
+                    }
+
+                    imported.forEach((set, i) => {
+                        if (!set.name || !set.mode || !Array.isArray(set.words)) {
+                            throw new Error(`Set #${i + 1} is invalid`);
+                        }
+                    });
+                    
+                    const existing = getSavedSets();
+                    let added = 0;
+                    let replaced = 0;
+                    
+                    imported.forEach(newSet => {
+                        const index = existing.findIndex(s => s.name === newSet.name);
+                        if (index !== -1) {
+                            existing[index] = newSet;
+                            replaced++;
+                        } else {
+                            existing.push(newSet);
+                            added++;
+                        }
+                    });
+                    
+                    saveSets(existing);
+                    loadSavedSets();
+                    
+                    let msg = `✅ Imported successfully!\n\n`;
+                    msg += `📥 New sets: ${added}\n`;
+                    msg += `🔄 Updated sets: ${replaced}\n`;
+                    msg += `📊 Total: ${existing.length}`;
+                    
+                    showNotification(msg, 'success');
+                    
+                } catch (err) {
+                    alert('❌ Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ===== Notification =====
+        function showNotification(text, type) {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.innerHTML = text.replace(/\n/g, '<br>');
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                notif.remove();
+            }, 4000);
+        }
+
+        // ===== Start Game =====
+        function startGame() {
+            if (words.length < 2) {
+                alert('Add at least 2 words!');
+                return;
+            }
+
+            const enableScore = document.getElementById('enableScore').checked;
+            const enableTimer = document.getElementById('enableTimer').checked;
+            const timerDuration = parseInt(document.getElementById('timerDuration').value);
+
+            score = 0;
+            matches = 0;
+            attempts = 0;
+            seconds = 0;
+            selectedLeft = null;
+            selectedRight = null;
+            gameActive = true;
+            words.forEach(w => w.matched = false);
+
+            document.getElementById('score').textContent = '0';
+            document.getElementById('matches').textContent = '0';
+            document.getElementById('totalWords').textContent = words.length;
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('resultMessage').className = 'result-message';
+            document.getElementById('resultMessage').innerHTML = '';
+
+            document.getElementById('scoreItem').style.display = enableScore ? 'block' : 'none';
+            document.getElementById('timerItem').style.display = enableTimer ? 'block' : 'none';
+            document.getElementById('timer').textContent = enableTimer ? formatTime(timerDuration) : '00:00';
+
+            document.getElementById('gameSection').classList.add('active');
+            document.getElementById('teacherSection').style.display = 'none';
+
+            renderGame();
+
+            if (enableTimer) {
+                seconds = timerDuration;
+                startCountdown();
+            } else {
+                startStopwatch();
+            }
+        }
+
+        // ===== Render Words (Full Random Order) =====
+        function renderGame() {
+            const leftCol = document.getElementById('leftColumn');
+            const rightCol = document.getElementById('rightColumn');
+            
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+
+            let leftWords = [...words].sort(() => Math.random() - 0.5);
+            let rightWords = [...words].sort(() => Math.random() - 0.5);
+
+            let shuffleAttempts = 0;
+            while (hasDirectMatches(leftWords, rightWords) && shuffleAttempts < 100) {
+                rightWords = [...words].sort(() => Math.random() - 0.5);
+                shuffleAttempts++;
+            }
+
+            leftWords.forEach((word, index) => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.textContent = word.left;
+                card.dataset.left = word.left;
+                card.dataset.index = index;
+                card.onclick = () => selectLeft(card, word.left);
+                leftCol.appendChild(card);
+            });
+
+            rightWords.forEach((word, index) => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.dataset.right = word.left;
+                card.dataset.index = index;
+                
+                if (gameMode === 'word-image' && word.image) {
+                    const img = document.createElement('img');
+                    img.src = word.image;
+                    img.alt = word.left;
+                    card.appendChild(img);
+                } else {
+                    card.textContent = word.right;
+                }
+                
+                card.onclick = () => selectRight(card, word.left);
+                rightCol.appendChild(card);
+            });
+        }
+
+        function hasDirectMatches(leftArr, rightArr) {
+            for (let i = 0; i < leftArr.length; i++) {
+                if (leftArr[i].left === rightArr[i].left) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ===== Select from Left =====
+        function selectLeft(card, leftValue) {
+            if (!gameActive || card.classList.contains('matched') || card.classList.contains('disabled')) return;
+
+            document.querySelectorAll('#leftColumn .word-card').forEach(c => {
+                if (!c.classList.contains('matched')) c.classList.remove('selected');
+            });
+
+            card.classList.add('selected');
+            selectedLeft = { card, value: leftValue };
+            checkMatch();
+        }
+
+        // ===== Select from Right =====
+        function selectRight(card, rightKey) {
+            if (!gameActive || card.classList.contains('matched') || card.classList.contains('disabled')) return;
+
+            document.querySelectorAll('#rightColumn .word-card').forEach(c => {
+                if (!c.classList.contains('matched')) c.classList.remove('selected');
+            });
+
+            card.classList.add('selected');
+            selectedRight = { card, value: rightKey };
+            checkMatch();
+        }
+
+        // ===== Check Match =====
+        function checkMatch() {
+            if (!selectedLeft || !selectedRight) return;
+
+            attempts++;
+            const isCorrect = selectedLeft.value === selectedRight.value;
+            const showFeedback = document.getElementById('showFeedback').checked;
+
+            if (isCorrect) {
+                // ✅ Correct match
+                playCorrectSound();
+                
+                if (document.getElementById('enableScore').checked) {
+                    score += 10;
+                    document.getElementById('score').textContent = score;
+                }
+                
+                matches++;
+                document.getElementById('matches').textContent = matches;
+
+                // Draw curved line between the two words
+                drawConnection(selectedLeft.card, selectedRight.card);
+
+                selectedLeft.card.classList.remove('selected');
+                selectedLeft.card.classList.add('matched', 'correct-match');
+                
+                selectedRight.card.classList.remove('selected');
+                selectedRight.card.classList.add('matched', 'correct-match');
+
+                const progress = (matches / words.length) * 100;
+                document.getElementById('progressBar').style.width = progress + '%';
+
+                if (showFeedback) {
+                    showMessage('✅ Correct answer! Well done', 'success');
+                }
+
+                if (matches === words.length) {
+                    setTimeout(endGame, 1000);
+                }
+            } else {
+                // ❌ Wrong match
+                playWrongSound();
+                
+                selectedLeft.card.classList.remove('selected');
+                selectedLeft.card.classList.add('wrong', 'disabled');
+                
+                selectedRight.card.classList.remove('selected');
+                selectedRight.card.classList.add('wrong', 'disabled');
+
+                if (showFeedback) {
+                    showMessage('❌ Wrong! Try again', 'error');
+                }
+
+                clearTimeout(wrongTimeout);
+                wrongTimeout = setTimeout(() => {
+                    document.querySelectorAll('.word-card.wrong').forEach(card => {
+                        card.classList.remove('wrong', 'disabled');
+                    });
+                }, 2000);
+            }
+
+            selectedLeft = null;
+            selectedRight = null;
+        }
+
+        // ===== Show Message =====
+        function showMessage(text, type) {
+            const msg = document.getElementById('resultMessage');
+            msg.textContent = text;
+            msg.className = 'result-message show ' + type;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 2000);
+        }
+
+        // ===== Timer =====
+        function formatTime(secs) {
+            const m = Math.floor(secs / 60).toString().padStart(2, '0');
+            const s = (secs % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function startCountdown() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                seconds--;
+                document.getElementById('timer').textContent = formatTime(seconds);
+                
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    gameActive = false;
+                    showMessage('⏰ Time is up!', 'error');
+                    setTimeout(() => {
+                        alert(`Time is up!\n\nMatches: ${matches}/${words.length}`);
+                        resetGame();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        function startStopwatch() {
+            clearInterval(timerInterval);
+            seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                document.getElementById('timer').textContent = formatTime(seconds);
+            }, 1000);
+        }
+
+        // ===== End Game =====
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            
+            playWinSound();
+            
+            const enableScore = document.getElementById('enableScore').checked;
+            const accuracy = attempts > 0 ? Math.round((matches / attempts) * 100) : 0;
+            
+            let message = `🎉 Congratulations! You completed the game!\n`;
+            message += `✅ Matches: ${matches}/${words.length}\n`;
+            message += `🎯 Attempts: ${attempts}\n`;
+            message += `📊 Accuracy: ${accuracy}%\n`;
+            
+            if (enableScore) {
+                message += `🏆 Score: ${score}\n`;
+            }
+            
+            if (!document.getElementById('enableTimer').checked) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                message += `⏱️ Time: ${mins} min ${secs} sec\n`;
+            }
+            
+            let stars = '⭐';
+            if (accuracy >= 90) stars = '⭐⭐⭐';
+            else if (accuracy >= 70) stars = '⭐⭐';
+            
+            message += `\nRating: ${stars}`;
+
+            setTimeout(() => {
+                alert(message);
+                createConfetti();
+            }, 500);
+        }
+
+        // ===== Reset =====
+        function resetGame() {
+            clearInterval(timerInterval);
+            clearTimeout(wrongTimeout);
+            removeAllConnections();
+            
+            document.getElementById('gameSection').classList.remove('active');
+            document.getElementById('teacherSection').style.display = 'block';
+            
+            document.querySelectorAll('.word-card').forEach(c => {
+                c.classList.remove('matched', 'wrong', 'disabled', 'selected', 'correct-match');
+            });
+        }
+
+        // ===== Celebration =====
+        function createConfetti() {
+            const colors = ['#667eea', '#764ba2', '#f39c12', '#e74c3c', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c'];
+            for (let i = 0; i < 60; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        }
+
+        // ===== Keyboard Shortcuts =====
+        document.getElementById('rightInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addWord();
+        });
+
+        document.getElementById('leftInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (gameMode === 'word-image') {
+                    document.getElementById('imageInput').click();
+                } else {
+                    document.getElementById('rightInput').focus();
+                }
+            }
+        });
+
+        document.getElementById('setNameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') saveCurrentSet();
+        });
+
+        // Redraw arrows on window resize
+        window.addEventListener('resize', function() {
+            if (gameActive && activeConnections.length > 0) {
+                const matchedPairs = [];
+                words.forEach((word) => {
+                    if (word.matched) {
+                        const leftCard = document.querySelector(`#leftColumn .word-card[data-left="${word.left}"]`);
+                        const rightCard = document.querySelector(`#rightColumn .word-card[data-right="${word.left}"]`);
+                        if (leftCard && rightCard) {
+                            matchedPairs.push({ left: leftCard, right: rightCard });
+                        }
+                    }
+                });
+                
+                removeAllConnections();
+                matchedPairs.forEach(pair => drawConnection(pair.left, pair.right));
+            }
+        });
+    </script>
+</body>
+</html>

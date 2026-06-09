@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🏀 سلة المعرفة 3D - Basketball Quiz 🎓</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 40%, #2a4a6c 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+            padding: 8px;
+            overflow: hidden;
+            perspective: 1800px;
+        }
+
+        /* خلفية الصالة */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 15% 15%, rgba(255,220,150,0.12) 0%, transparent 45%),
+                radial-gradient(ellipse at 85% 85%, rgba(120,180,255,0.08) 0%, transparent 45%),
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 80px);
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        /* أضواء السقف */
+        .arena-lights {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 120px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .arena-lights::before, .arena-lights::after {
+            content: "";
+            width: 80px;
+            height: 25px;
+            background: radial-gradient(ellipse, rgba(255,255,220,0.9) 0%, rgba(255,255,200,0.3) 40%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(3px);
+            animation: lightFlicker 3s ease-in-out infinite;
+        }
+        .arena-lights::after { animation-delay: 1.5s; }
+        @keyframes lightFlicker {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.95; transform: scale(0.98); }
+        }
+
+        .scene-3d {
+            width: 100%;
+            max-width: 950px;
+            height: 96vh;
+            perspective: 2000px;
+            perspective-origin: 50% 25%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* لوحة النتائج */
+        .scoreboard-3d {
+            position: relative;
+            z-index: 150;
+            background: linear-gradient(145deg, #1a1a2e, #0f0f1a);
+            border-radius: 18px;
+            padding: 10px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0 15px;
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 
+                0 12px 45px rgba(0,0,0,0.55),
+                0 0 0 2px #334,
+                0 0 40px rgba(100,180,255,0.25);
+            border: 1px solid #445566;
+            width: 96%;
+            max-width: 520px;
+            transform: translateZ(80px);
+        }
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 7px 16px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+        .score-item span {
+            color: #ffd700;
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
+        }
+
+        /* حاوية الملعب */
+        .court-container {
+            width: 100%;
+            height: 68%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(28deg) rotateZ(-1.5deg);
+            transform-origin: center 85%;
+        }
+
+        /* === أرضية الملعب الواقعية === */
+        .court-floor-3d {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            /* نسيج الخشب الحقيقي */
+            background: 
+                /* حبيبات الخشب */
+                repeating-linear-gradient(90deg, 
+                    #c9a66b 0px, #c9a66b 4px,
+                    #bd965b 4px, #bd965b 8px,
+                    #c9a66b 8px, #c9a66b 12px),
+                /* تدرج الإضاءة */
+                linear-gradient(180deg, #dcb888 0%, #a88454 60%, #8a6844 100%);
+            border-radius: 6px 6px 24px 24px;
+            transform: rotateX(90deg) translateZ(-1px);
+            transform-origin: top;
+            box-shadow: 
+                0 0 60px rgba(0,0,0,0.45),
+                inset 0 0 120px rgba(0,0,0,0.25),
+                inset 0 3px 0 rgba(255,255,255,0.15);
+            border: 4px solid #5d4a35;
+        }
+
+        /* حدود الملعب */
+        .court-border {
+            position: absolute;
+            width: 94%;
+            height: 94%;
+            left: 3%;
+            top: 3%;
+            border: 3px solid #fff;
+            border-radius: 4px 4px 18px 18px;
+            transform: rotateX(90deg) translateZ(2px);
+            transform-origin: top;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* خطوط الملعب */
+        .court-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform: rotateX(90deg) translateZ(3px);
+            transform-origin: top;
+            pointer-events: none;
+        }
+
+        /* خط المنتصف */
+        .center-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: #fff;
+            transform: translateX(-50%);
+            box-shadow: 0 0 6px rgba(255,255,255,0.6);
+        }
+
+        /* دائرة المنتصف */
+        .center-circle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 130px;
+            height: 130px;
+            border: 5px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .center-circle::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 8px rgba(255,255,255,0.7);
+        }
+
+        /* منطقة الرمية الحرة - المفتاح */
+        .key-area {
+            position: absolute;
+            left: 50%;
+            bottom: 12%;
+            width: 170px;
+            height: 190px;
+            border: 5px solid #fff;
+            border-bottom: none;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.03);
+        }
+        .key-area::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -2px;
+            width: 90px;
+            height: 90px;
+            border: 5px solid #fff;
+            border-top: none;
+            border-radius: 0 0 45px 45px;
+            transform: translateX(-50%);
+        }
+
+        /* خط الرمية الثلاثية */
+        .three-point-line {
+            position: absolute;
+            left: 50%;
+            bottom: 8%;
+            width: 360px;
+            height: 220px;
+            border: 5px solid #fff;
+            border-radius: 180px 180px 0 0;
+            border-bottom: none;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(255,255,255,0.4);
+        }
+
+        /* منطقة تحت السلة - الظل */
+        .under-hoop-glow {
+            position: absolute;
+            left: 50%;
+            bottom: 6%;
+            width: 120px;
+            height: 40px;
+            background: radial-gradient(ellipse, rgba(255,100,100,0.25) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            filter: blur(10px);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+        @keyframes pulseGlow { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+        /* === هيكل السلة الواقعي === */
+        .hoop-structure {
+            position: absolute;
+            left: 50%;
+            bottom: 10%;
+            transform: translateX(-50%) translateZ(150px);
+            transform-style: preserve-3d;
+            z-index: 60;
+        }
+
+        /* العمود الداعم المعدني */
+        .support-pole {
+            position: absolute;
+            left: 50%;
+            bottom: -180px;
+            width: 24px;
+            height: 230px;
+            background: linear-gradient(90deg, #2a2a2a, #4a4a4a, #2a2a2a);
+            border-radius: 5px;
+            transform: translateX(-50%) rotateY(-8deg);
+            box-shadow: 
+                4px 0 15px rgba(0,0,0,0.5),
+                inset 3px 0 8px rgba(255,255,255,0.25),
+                inset -3px 0 8px rgba(0,0,0,0.3);
+        }
+        .support-pole::before {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 10px;
+            bottom: 10px;
+            width: 3px;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.4), transparent);
+            border-radius: 2px;
+        }
+
+        /* اللوحة الخلفية الزجاجية */
+        .backboard-3d {
+            position: absolute;
+            left: 50%;
+            bottom: 45px;
+            width: 155px;
+            height: 110px;
+            background: linear-gradient(145deg, #f8f8f8, #e8e8e8);
+            border: 6px solid #c00;
+            border-radius: 8px;
+            transform: translateX(-50%) rotateY(-4deg);
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.55),
+                inset 0 3px 15px rgba(255,255,255,0.5),
+                inset 0 -3px 15px rgba(0,0,0,0.25),
+                0 0 0 2px rgba(0,0,0,0.1);
+        }
+        .backboard-3d::before {
+            content: "";
+            position: absolute;
+            top: 15px; left: 18px; right: 18px; bottom: 15px;
+            border: 4px solid #c00;
+            border-radius: 5px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+        .backboard-3d::after {
+            content: "🏀";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            opacity: 0.25;
+        }
+
+        /* الطوق المعدني الدائري */
+        .rim-3d {
+            position: absolute;
+            left: 50%;
+            bottom: 38px;
+            width: 96px;
+            height: 22px;
+            background: linear-gradient(180deg, #ff8855, #ff5522, #cc3300, #992200);
+            border-radius: 50%;
+            transform: translateX(-50%) rotateX(76deg);
+            box-shadow: 
+                0 8px 0 #662200,
+                0 15px 35px rgba(0,0,0,0.6),
+                inset 0 4px 12px rgba(255,255,255,0.5),
+                inset 0 -4px 12px rgba(0,0,0,0.3),
+                0 0 0 2px #ffaa77;
+            border: 2px solid #ffccaa;
+        }
+        .rim-3d::before {
+            content: "";
+            position: absolute;
+            top: 4px; left: 10px; right: 10px; height: 5px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.5), transparent);
+            border-radius: 3px;
+        }
+
+        /* الشبكة الواقعية */
+        .net-3d {
+            position: absolute;
+            left: 50%;
+            bottom: -32px;
+            width: 82px;
+            height: 70px;
+            transform: translateX(-50%);
+            background: 
+                repeating-linear-gradient(0deg, 
+                    rgba(255,255,255,0.97) 0px, rgba(255,255,255,0.97) 2px,
+                    transparent 2px, transparent 8px),
+                repeating-linear-gradient(90deg,
+                    rgba(255,255,255,0.97) 0px, rgba(255,255,255,0.97) 2px,
+                    transparent 2px, transparent 8px);
+            clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+            animation: netIdle 4s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        @keyframes netIdle {
+            0%, 100% { transform: translateX(-50%) scaleX(1) rotate(0deg); }
+            25% { transform: translateX(-50%) scaleX(1.02) rotate(0.5deg); }
+            75% { transform: translateX(-50%) scaleX(0.99) rotate(-0.3deg); }
+        }
+        .net-3d.swish {
+            animation: netSwish 0.5s ease-out !important;
+        }
+        @keyframes netSwish {
+            0% { transform: translateX(-50%) scaleX(1); }
+            30% { transform: translateX(-50%) scaleX(1.15) rotate(3deg); }
+            60% { transform: translateX(-50%) scaleX(0.95) rotate(-2deg); }
+            100% { transform: translateX(-50%) scaleX(1) rotate(0deg); }
+        }
+
+        /* === الكرة ثلاثية الأبعاد === */
+        .basketball-3d {
+            position: absolute;
+            width: 58px;
+            height: 58px;
+            left: 18%;
+            bottom: 28%;
+            transform: translateZ(100px);
+            cursor: grab;
+            z-index: 90;
+            transition: transform 0.08s ease;
+        }
+        .basketball-3d:active { cursor: grabbing; }
+
+        .ball-3d-inner {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 28% 28%, 
+                #ffaa66 0%, 
+                #ff8844 18%, 
+                #ee6622 40%, 
+                #cc4411 65%, 
+                #992200 100%);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 
+                0 18px 50px rgba(0,0,0,0.65),
+                inset -15px -15px 40px rgba(0,0,0,0.45),
+                inset 10px 10px 30px rgba(255,255,255,0.4),
+                0 0 0 2px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        /* خطوط الكرة */
+        .ball-3d-inner::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(90deg, 
+                    transparent 0%, transparent 47%, 
+                    rgba(0,0,0,0.3) 47%, rgba(0,0,0,0.3) 53%, 
+                    transparent 53%, transparent 100%),
+                radial-gradient(ellipse at 50% 50%, 
+                    transparent 40%, 
+                    rgba(0,0,0,0.25) 40%, rgba(0,0,0,0.25) 43%,
+                    transparent 43%, transparent 57%,
+                    rgba(0,0,0,0.25) 57%, rgba(0,0,0,0.25) 60%,
+                    transparent 60%);
+            mask: radial-gradient(circle, black 44%, transparent 48%);
+            -webkit-mask: radial-gradient(circle, black 44%, transparent 48%);
+        }
+        .ball-3d-inner::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 22% 22%, 
+                rgba(255,255,255,0.6) 0%, 
+                transparent 38%);
+        }
+
+        /* ظل الكرة الديناميكي */
+        .ball-shadow-3d {
+            position: absolute;
+            width: 55px;
+            height: 18px;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 75%);
+            border-radius: 50%;
+            left: calc(18% + 1px);
+            bottom: calc(28% - 10px);
+            transform: translateZ(2px);
+            filter: blur(4px);
+            transition: all 0.08s ease;
+            z-index: 15;
+        }
+        .basketball-3d.dragging .ball-shadow-3d {
+            opacity: 0.35;
+            transform: scale(0.75);
+        }
+
+        /* تلميح السحب */
+        .drag-hint-3d {
+            position: absolute;
+            left: 18%;
+            bottom: 42%;
+            transform: translateZ(110px);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 9px 20px;
+            border-radius: 28px;
+            font-size: 0.85rem;
+            animation: pulseHint 1.8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 85;
+            white-space: nowrap;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        @keyframes pulseHint {
+            0%, 100% { opacity: 0.85; transform: translateZ(110px) scale(1); }
+            50% { opacity: 1; transform: translateZ(110px) scale(1.06); }
+        }
+
+        /* منطقة الأسئلة */
+        .quiz-panel-3d {
+            position: relative;
+            z-index: 150;
+            background: linear-gradient(145deg, #fffef9, #f5f0e6);
+            border-radius: 24px;
+            padding: 22px;
+            margin: 12px 0 8px;
+            text-align: center;
+            box-shadow: 
+                0 25px 70px rgba(0,0,0,0.4),
+                0 0 0 4px #d4c4a8,
+                inset 0 2px 0 rgba(255,255,255,0.95);
+            width: 96%;
+            max-width: 580px;
+            transform: translateZ(90px);
+        }
+
+        .question-text-3d {
+            font-size: 1.3rem;
+            font-weight: 650;
+            color: #2c1810;
+            background: linear-gradient(145deg, #fff, #f9f4e8);
+            padding: 16px 20px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            border: 2px solid #e8d4b8;
+            box-shadow: 
+                0 6px 18px rgba(0,0,0,0.1),
+                inset 0 1px 0 rgba(255,255,255,0.95);
+            line-height: 1.45;
+        }
+
+        .choices-grid-3d {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 16px;
+            margin: 18px 0;
+        }
+
+        .choice-btn-3d {
+            background: linear-gradient(145deg, #ff8c42, #e6732e);
+            border-radius: 16px;
+            padding: 15px 12px;
+            font-size: 0.92rem;
+            font-weight: 650;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+            cursor: pointer;
+            transition: all 0.16s ease;
+            box-shadow: 
+                0 10px 28px rgba(200, 100, 40, 0.45),
+                inset 0 1px 0 rgba(255,255,255,0.35),
+                inset 0 -3px 6px rgba(0,0,0,0.25);
+            border: 2px solid #cc6622;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .choice-btn-3d::before {
+            content: "";
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.45s ease;
+        }
+        .choice-btn-3d:hover::before { left: 100%; }
+        .choice-btn-3d:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(200, 100, 40, 0.6);
+        }
+        .choice-btn-3d:active {
+            transform: translateY(3px);
+            box-shadow: 0 6px 18px rgba(200, 100, 40, 0.45);
+        }
+        .choice-btn-3d.correct {
+            background: linear-gradient(145deg, #4ade80, #22c55e);
+            border-color: #16a34a;
+            animation: correctPop 0.45s ease;
+        }
+        .choice-btn-3d.wrong {
+            background: linear-gradient(145deg, #f87171, #ef4444);
+            border-color: #dc2626;
+            animation: wrongBounce 0.45s ease;
+        }
+        @keyframes correctPop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+        @keyframes wrongBounce {
+            0%,100%{transform:translateX(0)} 
+            20%{transform:translateX(-8px)} 
+            40%{transform:translateX(8px)}
+            60%{transform:translateX(-4px)}
+            80%{transform:translateX(4px)}
+        }
+        .choice-btn-3d:disabled {
+            opacity: 0.72;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .explanation-3d {
+            background: linear-gradient(145deg, #fef9e7, #f5ecd3);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 14px;
+            color: #3d2817;
+            font-size: 0.95rem;
+            text-align: center;
+            border-right: 5px solid #f59e0b;
+            display: none;
+            line-height: 1.55;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+        }
+        .explanation-3d.show {
+            display: block;
+            animation: slideInUp 0.4s ease-out;
+        }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .next-btn-3d {
+            background: linear-gradient(145deg, #f59e0b, #d97706);
+            border: none;
+            padding: 14px;
+            font-size: 1.08rem;
+            font-weight: 750;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 14px;
+            color: #1a1a1a;
+            transition: all 0.16s ease;
+            box-shadow: 
+                0 10px 28px rgba(217, 119, 6, 0.45),
+                inset 0 1px 0 rgba(255,255,255,0.35);
+        }
+        .next-btn-3d:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(217, 119, 6, 0.6);
+        }
+        .next-btn-3d:active { transform: translateY(3px); }
+        .next-btn-3d.hidden { display: none; }
+
+        /* === كرة الطائرة للرمي === */
+        .flying-ball-3d {
+            position: fixed;
+            width: 56px;
+            height: 56px;
+            z-index: 2000;
+            pointer-events: none;
+            filter: drop-shadow(0 12px 30px rgba(0,0,0,0.7));
+        }
+        .flying-ball-3d .ball-3d-inner {
+            width: 100%; height: 100%;
+            font-size: 1.8rem;
+        }
+
+        /* تأثير النقاط العائمة */
+        .score-float {
+            position: fixed;
+            font-size: 2rem;
+            font-weight: 850;
+            color: #ffd700;
+            text-shadow: 
+                0 0 18px rgba(255, 215, 0, 0.95),
+                0 4px 0 rgba(0,0,0,0.35);
+            pointer-events: none;
+            z-index: 1999;
+            animation: floatUpScore 1.1s ease-out forwards;
+        }
+        @keyframes floatUpScore {
+            0% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(-120px) scale(1.5) rotate(25deg); }
+        }
+
+        /* جسيمات الاحتفال */
+        .confetti-3d {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            pointer-events: none;
+            z-index: 1998;
+            animation: confettiFall 1.4s ease-out forwards;
+            border-radius: 3px;
+        }
+        @keyframes confettiFall {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.2);
+            }
+        }
+
+        /* شاشة النهاية */
+        .end-modal-3d {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+        .end-modal-3d.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        .end-card-3d {
+            background: linear-gradient(145deg, #fffef9, #f5f0e6);
+            padding: 45px 40px;
+            border-radius: 36px;
+            text-align: center;
+            max-width: 450px;
+            width: 94%;
+            border: 6px solid #f59e0b;
+            box-shadow: 
+                0 45px 120px rgba(0,0,0,0.7),
+                inset 0 2px 0 rgba(255,255,255,0.98),
+                0 0 80px rgba(245, 158, 11, 0.4);
+            animation: popIn3d 0.55s ease-out;
+            position: relative;
+        }
+        @keyframes popIn3d {
+            from { 
+                opacity: 0; 
+                transform: scale(0.75) translateY(50px) rotateX(12deg); 
+            }
+            to { 
+                opacity: 1; 
+                transform: scale(1) translateY(0) rotateX(0); 
+            }
+        }
+        .end-card-3d::before {
+            content: "🏆";
+            font-size: 4.5rem;
+            display: block;
+            margin-bottom: 12px;
+            animation: trophyBounce 1.2s ease infinite;
+        }
+        @keyframes trophyBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .end-card-3d h2 {
+            font-size: 2rem;
+            color: #2c1810;
+            margin: 12px 0 18px;
+            text-shadow: 0 2px 0 rgba(255,255,255,0.65);
+        }
+        .final-score-3d {
+            font-size: 4rem;
+            font-weight: 950;
+            color: transparent;
+            background: linear-gradient(145deg, #ffd700, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(245, 158, 11, 0.6);
+            margin: 8px 0 25px;
+            display: block;
+        }
+        .replay-btn-3d {
+            background: linear-gradient(145deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+            padding: 16px 45px;
+            border-radius: 55px;
+            font-size: 1.25rem;
+            font-weight: 750;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            box-shadow: 
+                0 12px 35px rgba(22, 163, 74, 0.5),
+                inset 0 1px 0 rgba(255,255,255,0.35);
+        }
+        .replay-btn-3d:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 45px rgba(22, 163, 74, 0.65);
+        }
+        .replay-btn-3d:active { transform: translateY(3px); }
+
+        /* تأثيرات خاصة */
+        @keyframes screenShake3d {
+            0%, 100% { transform: rotateX(28deg) rotateZ(-1.5deg) translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: rotateX(28deg) rotateZ(-1.5deg) translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: rotateX(28deg) rotateZ(-1.5deg) translateX(5px); }
+        }
+        .court-container.shake { animation: screenShake3d 0.45s ease; }
+
+        .rim-3d.hit {
+            animation: rimHit 0.25s ease;
+        }
+        @keyframes rimHit {
+            0%, 100% { transform: translateX(-50%) rotateX(76deg) scale(1); }
+            50% { transform: translateX(-50%) rotateX(76deg) scale(1.12) rotateZ(2deg); }
+        }
+
+        .backboard-3d.hit {
+            animation: backboardHit 0.3s ease;
+        }
+        @keyframes backboardHit {
+            0%, 100% { transform: translateX(-50%) rotateY(-4deg) scale(1); }
+            50% { transform: translateX(-50%) rotateY(-4deg) scale(1.03) rotateX(1deg); }
+        }
+
+        /* استجابة الشاشات */
+        @media (max-width: 700px) {
+            .scene-3d { height: 99vh; }
+            .court-container { 
+                transform: rotateX(25deg) rotateZ(-1deg);
+                height: 63%;
+            }
+            .question-text-3d { font-size: 1.1rem; }
+            .choice-btn-3d { font-size: 0.85rem; min-height: 65px; }
+            .basketball-3d { width: 50px; height: 50px; }
+            .ball-3d-inner { font-size: 1.6rem; }
+            .backboard-3d { width: 120px; height: 88px; }
+            .rim-3d { width: 78px; }
+            .net-3d { width: 66px; height: 52px; }
+            .key-area { width: 130px; height: 150px; }
+            .three-point-line { width: 290px; height: 180px; }
+            .scoreboard-3d { padding: 8px 18px; }
+            .score-item { font-size: 0.88rem; padding: 6px 14px; }
+            .score-item span { font-size: 1.2rem; }
+        }
+
+        .depth-fog {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 35%;
+            background: linear-gradient(to top, rgba(10,22,40,0.45), transparent);
+            pointer-events: none;
+            z-index: 8;
+            transform: translateZ(25px);
+        }
+
+        /* تأثير ارتداد الكرة */
+        .bounce-effect {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,100,100,0.4) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1997;
+            animation: bounceFlash 0.4s ease-out forwards;
+            filter: blur(3px);
+        }
+        @keyframes bounceFlash {
+            0% { opacity: 0.8; transform: scale(0.3); }
+            50% { opacity: 0.4; transform: scale(1.5); }
+            100% { opacity: 0; transform: scale(2.5); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="arena-lights"></div>
+
+<div class="scene-3d">
+    <!-- لوحة النتائج -->
+    <div class="scoreboard-3d">
+        <div class="score-item">🏆 النقاط <span id="gameScore">0</span></div>
+        <div class="score-item">📋 سؤال <span id="currentQIndex">1</span>/<span id="totalQuestions">0</span></div>
+    </div>
+
+    <!-- الملعب ثلاثي الأبعاد -->
+    <div class="court-container" id="courtContainer">
+        <!-- الأرضية -->
+        <div class="court-floor-3d"></div>
+        <div class="court-border"></div>
+        
+        <!-- خطوط الملعب -->
+        <div class="court-lines">
+            <div class="center-line"></div>
+            <div class="center-circle"></div>
+            <div class="key-area"></div>
+            <div class="three-point-line"></div>
+        </div>
+        
+        <!-- منطقة تحت السلة -->
+        <div class="under-hoop-glow"></div>
+        
+        <!-- هيكل السلة -->
+        <div class="hoop-structure">
+            <div class="support-pole"></div>
+            <div class="backboard-3d" id="backboard"></div>
+            <div class="rim-3d" id="hoopRim"></div>
+            <div class="net-3d" id="net"></div>
+        </div>
+        
+        <!-- الكرة -->
+        <div class="basketball-3d" id="dragBall">
+            <div class="ball-3d-inner">🏀</div>
+        </div>
+        <div class="ball-shadow-3d"></div>
+        <div class="drag-hint-3d">👆 اسحب للأعلى ثم أفلت للرمي!</div>
+        
+        <!-- ضباب العمق -->
+        <div class="depth-fog"></div>
+    </div>
+
+    <!-- لوحة الأسئلة -->
+    <div class="quiz-panel-3d">
+        <div class="question-text-3d" id="questionLabel">جاري تحميل السؤال...</div>
+        <div class="choices-grid-3d" id="choicesContainer"></div>
+        <div class="explanation-3d" id="explanationBox"></div>
+        <button class="next-btn-3d hidden" id="nextQuizBtn">🎯 السؤال التالي</button>
+    </div>
+</div>
+
+<!-- شاشة النهاية -->
+<div class="end-modal-3d" id="endModal">
+    <div class="end-card-3d">
+        <h2>🎉 أحسنت يا بطل! 🎉</h2>
+        <p style="color: #666; margin-bottom: 10px;">مجموع نقاطك النهائي:</p>
+        <span class="final-score-3d" id="finalScoreSpan">0</span>
+        <button class="replay-btn-3d" onclick="location.reload()">🔄 لعبة جديدة</button>
+    </div>
+</div>
+
+<!-- الأصوات -->
+<audio id="swishSnd" preload="auto"><source src="https://www.soundjay.com/misc/sounds/basketball-swish-01.mp3"></audio>
+<audio id="brickSnd" preload="auto"><source src="https://www.soundjay.com/misc/sounds/basketball-bounce-01.mp3"></audio>
+<audio id="rimHitSnd" preload="auto"><source src="https://www.soundjay.com/misc/sounds/basketball-dribble-01.mp3"></audio>
+<audio id="cheerSnd" preload="auto"><source src="https://www.soundjay.com/misc/sounds/crowd-cheering-01.mp3"></audio>
+<audio id="scoreSnd" preload="auto"><source src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
+
+<script>
+    // ================ بنك الأسئلة ================
+    const QUIZ_DATA = [
+        {
+            text: "🏀 الفعل الماضي من 'EAT' هو:",
+            options: ["Eated", "Ate ✓", "Eaten", "Eating"],
+            correct: 1,
+            explanation: "✅ <strong>'Ate'</strong> هو التصريف الثاني (الماضي البسيط) للفعل Eat.<br>📝 <em>I ate breakfast at 8 AM.</em>"
+        },
+        {
+            text: "🌟 مرادف 'extremely happy' هو:",
+            options: ["Sad", "Joyful ✓", "Angry", "Tired"],
+            correct: 1,
+            explanation: "😊 <strong>'Joyful'</strong> = مليء بالفرح والابتهاج.<br>📝 <em>She felt joyful after the victory.</em>"
+        },
+        {
+            text: "📚 جمع كلمة 'Child' هو:",
+            options: ["Childs", "Childes", "Children ✓", "Child's"],
+            correct: 2,
+            explanation: "👧👦 <strong>'Children'</strong> جمع شاذ (Irregular).<br>📝 <em>The children are playing outside.</em>"
+        },
+        {
+            text: "🌍 عاصمة فرنسا هي:",
+            options: ["لندن", "برلين", "باريس ✓", "مدريد"],
+            correct: 2,
+            explanation: "🇫🇷 <strong>باريس</strong> عاصمة فرنسا ومن أشهر مدن العالم.<br>🗼 برج إيفل رمز المدينة."
+        },
+        {
+            text: "⚡ مرادف 'Quick' هو:",
+            options: ["Slow", "Fast ✓", "Lazy", "Heavy"],
+            correct: 1,
+            explanation: "🏃 <strong>'Fast'</strong> = سريع = Quick.<br>📝 <em>He runs very fast.</em>"
+        },
+        {
+            text: "🎨 'Big' : 'Large' :: 'Small' : ?",
+            options: ["Tiny ✓", "Huge", "Massive", "Great"],
+            correct: 0,
+            explanation: "🔍 <strong>'Tiny'</strong> = صغير جداً (أقرب مرادف لـ Small).<br>📝 <em>a tiny mistake</em>"
+        }
+    ];
+
+    // حالة اللعبة
+    const game = {
+        questions: [...QUIZ_DATA],
+        index: 0,
+        score: 0,
+        answered: false,
+        currentQ: null,
+        dragging: false
+    };
+
+    // العناصر
+    const el = {
+        question: document.getElementById("questionLabel"),
+        choices: document.getElementById("choicesContainer"),
+        score: document.getElementById("gameScore"),
+        qIdx: document.getElementById("currentQIndex"),
+        qTotal: document.getElementById("totalQuestions"),
+        nextBtn: document.getElementById("nextQuizBtn"),
+        explanation: document.getElementById("explanationBox"),
+        endModal: document.getElementById("endModal"),
+        finalScore: document.getElementById("finalScoreSpan"),
+        rim: document.getElementById("hoopRim"),
+        backboard: document.getElementById("backboard"),
+        net: document.getElementById("net"),
+        ball: document.getElementById("dragBall"),
+        ballShadow: document.querySelector(".ball-shadow-3d"),
+        court: document.getElementById("courtContainer"),
+        hint: document.querySelector(".drag-hint-3d")
+    };
+
+    // الأصوات
+    const snd = {
+        swish: document.getElementById("swishSnd"),
+        brick: document.getElementById("brickSnd"),
+        rimHit: document.getElementById("rimHitSnd"),
+        cheer: document.getElementById("cheerSnd"),
+        score: document.getElementById("scoreSnd")
+    };
+
+    let audioReady = false;
+    function enableAudio() {
+        if (audioReady) return;
+        Object.values(snd).forEach(s => {
+            if (s) { s.volume = 0.5; s.play().catch(()=>{}).then(()=>s.pause()).catch(()=>{}); }
+        });
+        audioReady = true;
+        if (el.hint) el.hint.style.display = 'none';
+    }
+    document.addEventListener('click', enableAudio, {once: true});
+    document.addEventListener('touchstart', enableAudio, {once: true});
+
+    function play(sound, t=0) {
+        if (!audioReady || !sound) return;
+        sound.currentTime = t;
+        sound.play().catch(()=>{});
+    }
+
+    function updateScore() {
+        el.score.textContent = game.score;
+        el.qIdx.textContent = game.index + 1;
+        el.qTotal.textContent = game.questions.length;
+    }
+
+    // جسيمات الاحتفال
+    function spawnConfetti(x, y, colors = ['#ffd700','#4ade80','#60a5fa','#f472b6']) {
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'confetti-3d';
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            p.style.background = colors[Math.floor(Math.random()*colors.length)];
+            p.style.setProperty('--tx', `${(Math.random()-0.5)*250}px`);
+            p.style.setProperty('--ty', `${Math.random()*350+120}px`);
+            p.style.setProperty('--rot', `${(Math.random()-0.5)*900}deg`);
+            document.body.appendChild(p);
+            setTimeout(()=>p.remove(), 1400);
+        }
+    }
+
+    function floatScore(x, y, text) {
+        const f = document.createElement('div');
+        f.className = 'score-float';
+        f.textContent = text;
+        f.style.left = x + 'px';
+        f.style.top = y + 'px';
+        document.body.appendChild(f);
+        setTimeout(()=>f.remove(), 1100);
+    }
+
+    function createBounceEffect(x, y) {
+        const eff = document.createElement('div');
+        eff.className = 'bounce-effect';
+        eff.style.left = (x - 30) + 'px';
+        eff.style.top = (y - 30) + 'px';
+        document.body.appendChild(eff);
+        setTimeout(()=>eff.remove(), 400);
+    }
+
+    // === فيزياء الرمي التفاعلية ===
+    function shootInteractive(element, isCorrect, callback) {
+        const ballRect = element.getBoundingClientRect();
+        const rimRect = el.rim.getBoundingClientRect();
+        const backboardRect = el.backboard.getBoundingClientRect();
+        
+        // إنشاء كرة طائرة
+        const flying = document.createElement('div');
+        flying.className = 'basketball-3d flying-ball-3d';
+        flying.innerHTML = '<div class="ball-3d-inner">🏀</div>';
+        flying.style.left = ballRect.left + ballRect.width/2 - 28 + 'px';
+        flying.style.top = ballRect.top + ballRect.height/2 - 28 + 'px';
+        document.body.appendChild(flying);
+        
+        element.style.opacity = '0.25';
+        
+        // نقاط البداية والنهاية
+        const sx = ballRect.left + ballRect.width/2;
+        const sy = ballRect.top + ballRect.height/2;
+        const targetX = rimRect.left + rimRect.width/2;
+        const targetY = rimRect.top + rimRect.height/2 - 18;
+        const apexY = Math.min(sy, targetY) - 200;
+        
+        let t = 0;
+        const duration = 650;
+        const start = performance.now();
+        let bounced = false;
+        
+        function animate(now) {
+            t = Math.min((now - start) / duration, 1);
+            const ease = t < 0.5 ? 2*t*t : -1 + (4-2*t)*t;
+            
+            // مسار بيزيه
+            const currentX = sx + (targetX - sx) * ease;
+            const currentY = sy * (1-ease)*(1-ease) + apexY * 2*(1-ease)*ease + targetY * ease*ease;
+            const rotation = ease * 1000;
+            const scale = 1 - ease * 0.18;
+            
+            if (isCorrect) {
+                // ✅ مسار السلة الناجحة - تدخل الشبكة
+                flying.style.left = (currentX - 28) + 'px';
+                flying.style.top = (currentY - 28) + 'px';
+                flying.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+                
+                // تحديث الظل
+                if (el.ballShadow) {
+                    el.ballShadow.style.opacity = 0.55 - ease * 0.35;
+                    el.ballShadow.style.transform = `scale(${1 - ease * 0.45})`;
+                }
+            } else {
+                // ❌ مسار الرمية الخاطئة - ترتد عن الطوق
+                if (!bounced && t > 0.85) {
+                    bounced = true;
+                    
+                    // تأثير الاصطدام
+                    el.rim.classList.add('hit');
+                    setTimeout(() => el.rim.classList.remove('hit'), 250);
+                    
+                    play(snd.rimHit);
+                    createBounceEffect(rimRect.left + rimRect.width/2, rimRect.top);
+                    
+                    // حساب اتجاه الارتداد (عشوائي واقعي)
+                    const bounceAngle = (Math.random() - 0.5) * 0.8;
+                    const bounceForce = 0.3 + Math.random() * 0.2;
+                    
+                    // مسار الارتداد
+                    const bounceDuration = 400;
+                    const bounceStart = performance.now();
+                    
+                    function bounceAnimate(bounceNow) {
+                        const bt = Math.min((bounceNow - bounceStart) / bounceDuration, 1);
+                        const bounceEase = 1 - Math.pow(1 - bt, 3);
+                        
+                        // حركة الارتداد للخارج وللأعلى قليلاً
+                        const bounceX = targetX + Math.sin(bounceAngle) * 150 * bounceEase;
+                        const bounceY = targetY - 80 * bounceEase + 30 * bt;
+                        const bounceRot = rotation + bounceEase * 400;
+                        const bounceScale = scale + bounceEase * 0.1;
+                        
+                        flying.style.left = (bounceX - 28) + 'px';
+                        flying.style.top = (bounceY - 28) + 'px';
+                        flying.style.transform = `rotate(${bounceRot}deg) scale(${bounceScale})`;
+                        
+                        if (bt < 1) {
+                            requestAnimationFrame(bounceAnimate);
+                        } else {
+                            // انتهاء الارتداد - اختفاء الكرة
+                            setTimeout(() => {
+                                flying.style.transition = 'opacity 0.3s ease';
+                                flying.style.opacity = '0';
+                                setTimeout(() => flying.remove(), 300);
+                            }, 100);
+                        }
+                    }
+                    requestAnimationFrame(bounceAnimate);
+                    return;
+                }
+                
+                flying.style.left = (currentX - 28) + 'px';
+                flying.style.top = (currentY - 28) + 'px';
+                flying.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+            }
+            
+            if (t < 1 && (!isCorrect || !bounced)) {
+                requestAnimationFrame(animate);
+            } else if (isCorrect && t >= 1) {
+                // ✅ الوصول للسلة - دخول الشبكة
+                setTimeout(() => {
+                    flying.remove();
+                    element.style.opacity = '1';
+                    
+                    play(snd.swish);
+                    play(snd.score);
+                    
+                    // تأثيرات السلة
+                    el.rim.classList.add('swish');
+                    el.net.classList.add('swish');
+                    setTimeout(() => {
+                        el.rim.classList.remove('swish');
+                        el.net.classList.remove('swish');
+                    }, 500);
+                    
+                    // حركة الكرة خلال الشبكة (تسقط للأسفل)
+                    const dropDuration = 350;
+                    const dropStart = performance.now();
+                    const dropStartY = targetY - 28;
+                    
+                    function dropAnimate(dropNow) {
+                        const dt = Math.min((dropNow - dropStart) / dropDuration, 1);
+                        const dropEase = dt < 0.5 ? 2*dt*dt : -1 + (4-2*dt)*dt;
+                        
+                        flying.style.top = (dropStartY + dropEase * 150) + 'px';
+                        flying.style.opacity = 1 - dropEase * 0.5;
+                        flying.style.transform = `rotate(${1000 + dropEase * 200}deg) scale(${0.82 - dropEase * 0.1})`;
+                        
+                        if (dt < 1) {
+                            requestAnimationFrame(dropAnimate);
+                        } else {
+                            flying.remove();
+                        }
+                    }
+                    
+                    // إعادة إنشاء الكرة للسقوط
+                    const dropBall = document.createElement('div');
+                    dropBall.className = 'basketball-3d flying-ball-3d';
+                    dropBall.innerHTML = '<div class="ball-3d-inner">🏀</div>';
+                    dropBall.style.left = (targetX - 28) + 'px';
+                    dropBall.style.top = (targetY - 28) + 'px';
+                    dropBall.style.zIndex = '1999';
+                    document.body.appendChild(dropBall);
+                    requestAnimationFrame(dropAnimate);
+                    
+                    // النقاط والشرح
+                    game.score += 10;
+                    updateScore();
+                    
+                    el.explanation.innerHTML = `🎯 <strong>سلة رائعة! +10 نقاط</strong><br><br>${game.currentQ.explanation}`;
+                    el.explanation.classList.add('show');
+                    
+                    // احتفال
+                    play(snd.cheer);
+                    spawnConfetti(rimRect.left + rimRect.width/2, rimRect.top - 40);
+                    floatScore(rimRect.left + rimRect.width/2, rimRect.top - 80, '+10 🏀');
+                    
+                    element.classList.add('correct');
+                    
+                }, 100);
+            }
+        }
+        requestAnimationFrame(animate);
+        
+        // معالجة الإجابة الخاطئة بعد انتهاء الحركة
+        if (!isCorrect) {
+            setTimeout(() => {
+                if (!bounced) {
+                    // إذا لم ترتد بعد (اصطدام باللوح الخلفي)
+                    el.backboard.classList.add('hit');
+                    setTimeout(() => el.backboard.classList.remove('hit'), 300);
+                    play(snd.brick);
+                    createBounceEffect(backboardRect.left + backboardRect.width/2, backboardRect.top + backboardRect.height/2);
+                    
+                    // ارتداد من اللوح الخلفي
+                    const bounceBack = document.createElement('div');
+                    bounceBack.className = 'basketball-3d flying-ball-3d';
+                    bounceBack.innerHTML = '<div class="ball-3d-inner">🏀</div>';
+                    bounceBack.style.left = (backboardRect.left + backboardRect.width/2 - 28) + 'px';
+                    bounceBack.style.top = (backboardRect.top + backboardRect.height/2 - 28) + 'px';
+                    document.body.appendChild(bounceBack);
+                    
+                    const bbStart = performance.now();
+                    const bbDuration = 450;
+                    function bbAnimate(bbNow) {
+                        const bt = Math.min((bbNow - bbStart) / bbDuration, 1);
+                        const bbX = backboardRect.left + backboardRect.width/2 - 28 + (Math.random()-0.8) * 200 * bt;
+                        const bbY = backboardRect.top + backboardRect.height/2 - 28 - 100 * bt + 50 * bt*bt;
+                        bounceBack.style.left = bbX + 'px';
+                        bounceBack.style.top = bbY + 'px';
+                        bounceBack.style.transform = `rotate(${bt * 600}deg) scale(${1 - bt * 0.2})`;
+                        bounceBack.style.opacity = 1 - bt;
+                        if (bt < 1) requestAnimationFrame(bbAnimate);
+                        else bounceBack.remove();
+                    }
+                    requestAnimationFrame(bbAnimate);
+                }
+                
+                element.style.opacity = '1';
+                
+                // اهتزاز
+                el.court.classList.add('shake');
+                setTimeout(() => el.court.classList.remove('shake'), 450);
+                
+                const correct = game.currentQ.options[game.currentQ.correct];
+                el.explanation.innerHTML = `❌ <strong>لم تدخل!</strong><br><br>✅ الصحيحة: <strong>${correct}</strong><br><br>📖 ${game.currentQ.explanation}`;
+                el.explanation.classList.add('show');
+                
+                element.classList.add('wrong');
+                
+                document.querySelectorAll('.choice-btn-3d').forEach((btn, i) => {
+                    if (i === game.currentQ.correct) btn.classList.add('correct');
+                });
+                
+                // تعطيل الخيارات
+                document.querySelectorAll('.choice-btn-3d').forEach(btn => {
+                    btn.disabled = true;
+                    if (!btn.classList.contains('correct')) btn.style.opacity = '0.68';
+                });
+                
+                game.answered = true;
+                el.nextBtn.classList.remove('hidden');
+                if (callback) callback();
+            }, 750);
+        }
+    }
+
+    function loadQuestion() {
+        if (game.index >= game.questions.length) { endGame(); return; }
+        
+        game.answered = false;
+        el.nextBtn.classList.add('hidden');
+        el.explanation.classList.remove('show');
+        el.explanation.innerHTML = '';
+        
+        const q = game.questions[game.index];
+        game.currentQ = q;
+        el.question.textContent = q.text;
+        el.choices.innerHTML = '';
+        
+        q.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn-3d';
+            btn.textContent = opt;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (game.answered) return;
+                shootInteractive(btn, i === q.correct);
+            };
+            el.choices.appendChild(btn);
+        });
+        
+        // إعادة الكرة
+        el.ball.style.opacity = '1';
+        el.ball.style.left = '18%';
+        el.ball.style.bottom = '28%';
+        if (el.ballShadow) {
+            el.ballShadow.style.opacity = '0.55';
+            el.ballShadow.style.transform = 'scale(1)';
+        }
+        
+        updateScore();
+    }
+
+    // إعداد السحب للكرة
+    function setupDrag3D() {
+        let startX, startY, initLeft, initBottom;
+        
+        const start = (e) => {
+            if (game.answered) return;
+            e.preventDefault();
+            const t = e.touches?.[0] || e;
+            game.dragging = true;
+            el.ball.classList.add('dragging');
+            
+            startX = t.clientX;
+            startY = t.clientY;
+            initLeft = parseFloat(el.ball.style.left) || 18;
+            initBottom = parseFloat(el.ball.style.bottom) || 28;
+        };
+        
+        const move = (e) => {
+            if (!game.dragging) return;
+            e.preventDefault();
+            const t = e.touches?.[0] || e;
+            const dx = t.clientX - startX;
+            const dy = startY - t.clientY;
+            
+            const newLeft = Math.max(10, Math.min(40, initLeft + dx * 0.18));
+            const newBottom = Math.max(28, Math.min(65, initBottom + dy * 0.1));
+            
+            el.ball.style.left = newLeft + '%';
+            el.ball.style.bottom = newBottom + '%';
+            
+            if (el.ballShadow) {
+                el.ballShadow.style.left = `calc(${newLeft}% + 1px)`;
+                el.ballShadow.style.bottom = `calc(${newBottom}% - 10px)`;
+                el.ballShadow.style.opacity = 0.45 + dy * 0.0025;
+                el.ballShadow.style.transform = `scale(${1 - dy * 0.0035})`;
+            }
+        };
+        
+        const end = (e) => {
+            if (!game.dragging) return;
+            game.dragging = false;
+            el.ball.classList.remove('dragging');
+            
+            const t = e.changedTouches?.[0] || e;
+            const rimRect = el.rim.getBoundingClientRect();
+            const dist = Math.hypot(
+                t.clientX - (rimRect.left + rimRect.width/2),
+                t.clientY - (rimRect.top + rimRect.height/2)
+            );
+            
+            if (dist < 200 && !game.answered) {
+                const btns = document.querySelectorAll('.choice-btn-3d:not(:disabled)');
+                if (btns[0]) btns[0].click();
+            } else {
+                el.ball.style.transition = 'all 0.4s cubic-bezier(0.2,0.85,0.2,1)';
+                el.ball.style.left = '18%';
+                el.ball.style.bottom = '28%';
+                if (el.ballShadow) {
+                    el.ballShadow.style.transition = 'all 0.4s ease';
+                    el.ballShadow.style.opacity = '0.55';
+                    el.ballShadow.style.transform = 'scale(1)';
+                }
+                setTimeout(() => {
+                    el.ball.style.transition = '';
+                    if (el.ballShadow) el.ballShadow.style.transition = '';
+                }, 400);
+            }
+        };
+        
+        el.ball.addEventListener('mousedown', start);
+        el.ball.addEventListener('touchstart', start, {passive:false});
+        document.addEventListener('mousemove', move);
+        document.addEventListener('touchmove', move, {passive:false});
+        document.addEventListener('mouseup', end);
+        document.addEventListener('touchend', end);
+    }
+
+    function nextQ() {
+        if (!game.answered) return;
+        game.index++;
+        loadQuestion();
+    }
+
+    function endGame() {
+        el.finalScore.textContent = game.score;
+        el.endModal.classList.add('show');
+        play(snd.cheer);
+        
+        setTimeout(() => {
+            const cx = window.innerWidth/2, cy = window.innerHeight/2;
+            for (let i=0; i<5; i++) {
+                setTimeout(() => {
+                    spawnConfetti(
+                        cx + (Math.random()-0.5)*300,
+                        cy + (Math.random()-0.5)*120,
+                        ['#ffd700','#4ade80','#60a5fa','#f472b6','#a78bfa']
+                    );
+                }, i*140);
+            }
+        }, 450);
+    }
+
+    function init() {
+        game.index = 0;
+        game.score = 0;
+        game.answered = false;
+        el.qTotal.textContent = game.questions.length;
+        updateScore();
+        loadQuestion();
+        setupDrag3D();
+    }
+
+    el.nextBtn.addEventListener('click', nextQ);
+    window.addEventListener('load', () => setTimeout(init, 450));
+</script>
+</body>
+</html>
